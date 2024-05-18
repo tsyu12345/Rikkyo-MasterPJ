@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4502086714574504}
   - component: {fileID: 33322158968890420}
   - component: {fileID: 23082483581203986}
+  - component: {fileID: 2407799619923258667}
   - component: {fileID: 64813607633436090}
   m_Layer: 0
   m_Name: Tower_B
@@ -94,6 +95,21 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &2407799619923258667
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1930365806956314}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1edfcbceb4662844a866e49e3b9570c2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  MaxCapacity: 0
+  NowAccCount: 0
+  currentCapacity: 0
 --- !u!64 &64813607633436090
 MeshCollider:
   m_ObjectHideFlags: 0

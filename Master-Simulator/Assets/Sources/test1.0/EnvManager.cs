@@ -11,6 +11,8 @@ public class EnvManager : MonoBehaviour {
     [Header("Environment Parameters")]
     public int MaxTowerCount;
     public int MinTowerCount = 1;
+    public int MinTowerCapacity = 1;
+    public int MaxTowerCapacity = 10;
 
     [Header("GameObjects")]
     public GameObject Tower;
@@ -24,7 +26,6 @@ public class EnvManager : MonoBehaviour {
             Debug.LogWarning(LogPrefix + "MinTowerCount must larger than 0");
         }
         Agents = new SimpleMultiAgentGroup();
-        RegisterAgents("Agent");
         //TEST
         init();
     }
@@ -33,6 +34,7 @@ public class EnvManager : MonoBehaviour {
     /// 環境の初期化,エピソード開始時にコールされる
     /// </summary>
     public void init() {
+        RegisterAgents("Agent");
         //生成する避難タワーの総数をランダムに設定
         int countTowers = Random.Range(MinTowerCount, MaxTowerCount);
         for(int i = 0; i < countTowers; i++) {
@@ -57,6 +59,11 @@ public class EnvManager : MonoBehaviour {
         // 親のGameObjectの子としてPrefabを生成
         GameObject newObject = Instantiate(Tower, randomPosition, Quaternion.identity);
         newObject.transform.parent = transform;
+
+        //Towerのパラメータをランダムに設定
+        Tower tower = newObject.GetComponent<Tower>();
+        tower.MaxCapacity = Random.Range(MinTowerCapacity, MaxTowerCapacity);
+        tower.NowAccCount = 0;
     }
 
     private Vector3 GenerateRandomPosition(Vector3 center, Vector3 size) {
