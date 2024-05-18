@@ -14,6 +14,7 @@ public class EnvManager : MonoBehaviour {
 
     [Header("GameObjects")]
     public GameObject Tower;
+    public GameObject floor;
 
     private SimpleMultiAgentGroup Agents;
     private string LogPrefix = "EnvManager: ";
@@ -24,6 +25,8 @@ public class EnvManager : MonoBehaviour {
         }
         Agents = new SimpleMultiAgentGroup();
         RegisterAgents("Agent");
+        //TEST
+        init();
     }
 
     /// <summary>
@@ -47,17 +50,22 @@ public class EnvManager : MonoBehaviour {
 
 
     private void SpawnTower() {
-        //Fieldの範囲を取得
-        Bounds bounds = gameObject.GetComponent<Renderer>().bounds;
-        // 親の範囲内でランダムな位置を計算（y座標は固定）
-        float randomX = Random.Range(bounds.min.x, bounds.max.x);
-        float fixedY = bounds.center.y; // 固定されたy座標
-        float randomZ = Random.Range(bounds.min.z, bounds.max.z);
-        Vector3 randomPosition = new Vector3(randomX, fixedY, randomZ);
-
+        Vector3 size = floor.GetComponent<Collider>().bounds.size;
+        Vector3 center = floor.transform.position;
+        Vector3 randomPosition = GenerateRandomPosition(center, size);
+        
         // 親のGameObjectの子としてPrefabを生成
         GameObject newObject = Instantiate(Tower, randomPosition, Quaternion.identity);
         newObject.transform.parent = transform;
+    }
+
+    private Vector3 GenerateRandomPosition(Vector3 center, Vector3 size) {
+        float x = Random.Range(center.x - size.x / 2, center.x + size.x / 2);
+        float z = Random.Range(center.z - size.z / 2, center.z + size.z / 2);
+
+        // 生成されたXとZ座標を使用して新しい位置Vector3を返す
+        // y座標はSubFieldPlaneのy座標に合わせるか、必要に応じて調整
+        return new Vector3(x, center.y, z);
     }
 
 

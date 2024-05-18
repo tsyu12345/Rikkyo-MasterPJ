@@ -17,5 +17,8 @@ public class Tower : MonoBehaviour{
 
     void Update() {
         currentCapacity = MaxCapacity - NowAccCount;
+        if (currentCapacity <= 0) {
+            onRejected?.Invoke(NowAccCount);
+        }
     }
 }
