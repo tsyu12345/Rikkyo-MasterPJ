@@ -6,6 +6,8 @@ TagManager:
   tags:
   - Obstacle
   - Balloon
+  - Agent
+  - Tower
   layers:
   - Default
   - TransparentFX

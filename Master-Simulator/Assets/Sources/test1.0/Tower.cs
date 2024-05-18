@@ -1,0 +1,24 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+/// <summary>
+/// 津波避難タワーに関するスクリプト（オブジェクト１台分）
+/// 現在の収容人数や、受け入れ可否等のデータを用意
+/// </summary>
+public class Tower : MonoBehaviour{
+    public int MaxCapacity; //最大収容人数
+    public int NowAccCount; //現在の収容人数
+    public int currentCapacity; //現在の受け入れ可能人数：最大収容人数 - 現在の収容人数
+
+    /**Events */
+    public delegate void AcceptRejected(int NowAccCount) ; //収容定員が超過した時に発火する
+    public AcceptRejected onRejected;
+
+    void Update() {
+        currentCapacity = MaxCapacity - NowAccCount;
+        if (currentCapacity <= 0) {
+            onRejected?.Invoke(NowAccCount);
+        }
+    }
+}
