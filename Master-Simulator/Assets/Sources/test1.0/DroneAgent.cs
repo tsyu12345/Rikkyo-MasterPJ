@@ -36,7 +36,9 @@ public class DroneAgent : Agent {
     /// エージェントの行動定義
     /// </summary>
     /// <param name="actions"></param>
-    public override void OnActionReceived(ActionBuffers actions) {}
+    public override void OnActionReceived(ActionBuffers actions) {
+        _controller.FlyingCtrl(actions);
+    }
 
     public override void Heuristic(in ActionBuffers actionsOut) {
         _controller.InHeuristicCtrl(actionsOut);
