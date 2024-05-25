@@ -13,9 +13,13 @@ public class EnvManager : MonoBehaviour {
     public int MinTowerCount = 1;
     public int MinTowerCapacity = 1;
     public int MaxTowerCapacity = 10;
+    /**避難者の設定*/
+    public int MinEvacueeCount = 1;
+    public int MaxEvacueeCount = 10;
 
     [Header("GameObjects")]
     public GameObject Tower;
+    public GameObject Evacuee;
     public GameObject floor;
     public string TowerTag = "Tower";
 
@@ -40,6 +44,10 @@ public class EnvManager : MonoBehaviour {
         int countTowers = Random.Range(MinTowerCount, MaxTowerCount);
         for(int i = 0; i < countTowers; i++) {
             SpawnTower();
+        }
+        int countEvacuees = Random.Range(MinEvacueeCount, MaxEvacueeCount);
+        for(int i = 0; i < countEvacuees; i++) {
+            SpawnEvacuees();
         }
     }
 
@@ -66,6 +74,17 @@ public class EnvManager : MonoBehaviour {
         Tower tower = newObject.GetComponent<Tower>();
         tower.MaxCapacity = Random.Range(MinTowerCapacity, MaxTowerCapacity);
         tower.NowAccCount = 0;
+    }
+
+    private void SpawnEvacuees() {
+        Vector3 size = floor.GetComponent<Collider>().bounds.size;
+        Vector3 center = floor.transform.position;
+        Vector3 randomPosition = GenerateRandomPosition(center, size);
+        
+        // 親のGameObjectの子としてPrefabを生成
+        GameObject newObject = Instantiate(Evacuee, randomPosition, Quaternion.identity);
+        newObject.transform.parent = transform;
+        newObject.tag = "Evacuee";
     }
 
     private Vector3 GenerateRandomPosition(Vector3 center, Vector3 size) {
