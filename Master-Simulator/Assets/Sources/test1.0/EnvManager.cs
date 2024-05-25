@@ -17,6 +17,7 @@ public class EnvManager : MonoBehaviour {
     [Header("GameObjects")]
     public GameObject Tower;
     public GameObject floor;
+    public string TowerTag = "Tower";
 
     private SimpleMultiAgentGroup Agents;
     private string LogPrefix = "EnvManager: ";
@@ -59,6 +60,7 @@ public class EnvManager : MonoBehaviour {
         // 親のGameObjectの子としてPrefabを生成
         GameObject newObject = Instantiate(Tower, randomPosition, Quaternion.identity);
         newObject.transform.parent = transform;
+        newObject.tag = TowerTag;
 
         //Towerのパラメータをランダムに設定
         Tower tower = newObject.GetComponent<Tower>();
