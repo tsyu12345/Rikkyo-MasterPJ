@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.MLAgents;
 using UnityEngine;
+using Constants;
 
 /// <summary>
 /// 環境に関するスクリプトのエントリポイント。Fieldオブジェクトにアタッチされる想定
@@ -21,7 +22,6 @@ public class EnvManager : MonoBehaviour {
     public GameObject Tower;
     public GameObject Evacuee;
     public GameObject floor;
-    public string TowerTag = "Tower";
 
     private SimpleMultiAgentGroup Agents;
     private string LogPrefix = "EnvManager: ";
@@ -31,8 +31,6 @@ public class EnvManager : MonoBehaviour {
             Debug.LogWarning(LogPrefix + "MinTowerCount must larger than 0");
         }
         Agents = new SimpleMultiAgentGroup();
-        //TEST
-        init();
     }
 
     /// <summary>
@@ -68,7 +66,7 @@ public class EnvManager : MonoBehaviour {
         // 親のGameObjectの子としてPrefabを生成
         GameObject newObject = Instantiate(Tower, randomPosition, Quaternion.identity);
         newObject.transform.parent = transform;
-        newObject.tag = TowerTag;
+        newObject.tag = Tags.Tower;
 
         //Towerのパラメータをランダムに設定
         Tower tower = newObject.GetComponent<Tower>();

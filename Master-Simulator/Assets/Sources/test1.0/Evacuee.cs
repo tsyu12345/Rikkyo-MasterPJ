@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UtilityFuncs;
+using Constants;
+
 /// <summary>
 /// 避難者に関するスクリプト
 /// </summary>
@@ -15,8 +17,6 @@ public class Evacuee : MonoBehaviour {
     [Header("Evacuee Targets")]
     public bool isFollowingDrone = false;
     public GameObject FollowTarget;
-    private string DroneTag = "Agent";
-    private string TowerTag = "Tower";
     private Utils Utils = new Utils();
 
     void Start() {
@@ -50,7 +50,7 @@ public class Evacuee : MonoBehaviour {
     private void SearchDrone() {
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, SearchRadius);
         foreach (var hitCollider in hitColliders) {
-            if (hitCollider.CompareTag(DroneTag)) {
+            if (hitCollider.CompareTag(Tags.Agent)) {
                 isFollowingDrone = true;
                 FollowTarget = hitCollider.gameObject;
                 return;
@@ -66,7 +66,7 @@ public class Evacuee : MonoBehaviour {
     /// </summary>
     /// <returns>localField内のTowerオブジェクトのリスト</returns>
     private List<GameObject> SearchTowers() {
-        List<GameObject> towers = Utils.GetGameObjectsFromTagOnLocal(Field, TowerTag);
+        List<GameObject> towers = Utils.GetGameObjectsFromTagOnLocal(Field, Tags.Tower);
         Debug.Log($"Towers Count: {towers.Count}");
         List<GameObject> sortedTowers = new List<GameObject>();
         foreach (var tower in towers) {
