@@ -11,6 +11,8 @@ public class Tower : MonoBehaviour{
     public int NowAccCount; //現在の収容人数
     public int currentCapacity; //現在の受け入れ可能人数：最大収容人数 - 現在の収容人数
 
+    public string uuid { get; set; } //タワーの識別子
+
     /**Events */
     public delegate void AcceptRejected(int NowAccCount) ; //収容定員が超過した時に発火する
     public AcceptRejected onRejected;

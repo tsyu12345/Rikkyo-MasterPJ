@@ -37,6 +37,23 @@ public class Evacuee : MonoBehaviour {
         }
     }
 
+    /// <summary>
+    /// タワーへの避難を行う
+    /// </summary>
+    /// <param name="tower">タワーオブジェクト</param>
+    private void Evacuation(GameObject targetTower) {
+        //Towerクラスを取得
+        Tower tower = targetTower.GetComponent<Tower>();
+        if(tower.currentCapacity > 0) {
+            tower.NowAccCount++;
+        } else { //キャパシティがいっぱいの場合、次のタワーを探す
+            List<GameObject> towers = SearchTowers(tower.uuid);
+            if(towers.Count > 0) {
+                FollowTarget = towers[0]; //最短距離のタワーを目標に設定
+            }
+        }
+    }
+
 
     /// <summary>
     /// 目的地に向かって移動する
@@ -46,6 +63,7 @@ public class Evacuee : MonoBehaviour {
         Vector3 pos = new Vector3(FollowTarget.transform.position.x, 1, FollowTarget.transform.position.z);
         transform.position = Vector3.MoveTowards(transform.position, pos, Speed * Time.deltaTime);
     }
+
 
     private void SearchDrone() {
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, SearchRadius);
@@ -64,12 +82,16 @@ public class Evacuee : MonoBehaviour {
     /// タグ名からタワーを検索する。こちらは探索範囲関係なく、フィールドに存在する全てのタワーを検索し、
     /// 距離別にソートして返す
     /// </summary>
+    /// <param name="excludeUUID">除外するタワーのUUID.未指定の場合はnull</param>
     /// <returns>localField内のTowerオブジェクトのリスト</returns>
-    private List<GameObject> SearchTowers() {
+    private List<GameObject> SearchTowers(string excludeUUID=null) {
         List<GameObject> towers = Utils.GetGameObjectsFromTagOnLocal(Field, Tags.Tower);
         Debug.Log($"Towers Count: {towers.Count}");
         List<GameObject> sortedTowers = new List<GameObject>();
         foreach (var tower in towers) {
+            if(excludeUUID != null && tower.GetComponent<Tower>().uuid == excludeUUID) {
+                continue;
+            }
             sortedTowers.Add(tower);
         }
         sortedTowers.Sort((a, b) => Vector3.Distance(a.transform.position, transform.position).CompareTo(Vector3.Distance(b.transform.position, transform.position)));
@@ -78,5 +100,15 @@ public class Evacuee : MonoBehaviour {
             Debug.DrawLine(transform.position, tower.transform.position, Color.red);
         }
         return sortedTowers;
+    }
+
+
+    private void SendSignalForDrone(GameObject drone) {
+        DroneAgent agent = drone.GetComponent<DroneAgent>();
+        // 既に誘導中の場合は無視(リストに含まれている場合は無視)
+        if(agent.guidedEvacuees.Contains(gameObject)) {
+            return;
+        }
+        agent.guidedEvacuees.Add(gameObject);
     }
 }

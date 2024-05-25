@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.MLAgents;
@@ -39,11 +40,11 @@ public class EnvManager : MonoBehaviour {
     public void init() {
         RegisterAgents("Agent");
         //生成する避難タワーの総数をランダムに設定
-        int countTowers = Random.Range(MinTowerCount, MaxTowerCount);
+        int countTowers = UnityEngine.Random.Range(MinTowerCount, MaxTowerCount);
         for(int i = 0; i < countTowers; i++) {
             SpawnTower();
         }
-        int countEvacuees = Random.Range(MinEvacueeCount, MaxEvacueeCount);
+        int countEvacuees = UnityEngine.Random.Range(MinEvacueeCount, MaxEvacueeCount);
         for(int i = 0; i < countEvacuees; i++) {
             SpawnEvacuees();
         }
@@ -70,8 +71,9 @@ public class EnvManager : MonoBehaviour {
 
         //Towerのパラメータをランダムに設定
         Tower tower = newObject.GetComponent<Tower>();
-        tower.MaxCapacity = Random.Range(MinTowerCapacity, MaxTowerCapacity);
+        tower.MaxCapacity = UnityEngine.Random.Range(MinTowerCapacity, MaxTowerCapacity);
         tower.NowAccCount = 0;
+        tower.uuid = Guid.NewGuid().ToString();
     }
 
     private void SpawnEvacuees() {
@@ -86,8 +88,8 @@ public class EnvManager : MonoBehaviour {
     }
 
     private Vector3 GenerateRandomPosition(Vector3 center, Vector3 size) {
-        float x = Random.Range(center.x - size.x / 2, center.x + size.x / 2);
-        float z = Random.Range(center.z - size.z / 2, center.z + size.z / 2);
+        float x = UnityEngine.Random.Range(center.x - size.x / 2, center.x + size.x / 2);
+        float z = UnityEngine.Random.Range(center.z - size.z / 2, center.z + size.z / 2);
 
         // 生成されたXとZ座標を使用して新しい位置Vector3を返す
         // y座標はSubFieldPlaneのy座標に合わせるか、必要に応じて調整
