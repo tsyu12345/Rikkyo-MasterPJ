@@ -35,6 +35,10 @@ public class Evacuee : MonoBehaviour {
         if(FollowTarget != null) {
             Move();
         }
+        //避難タワーに到達した場合、避難処理を行う
+        if(!isFollowingDrone || Vector3.Distance(transform.localPosition, FollowTarget.transform.localPosition) < 1.0f) {
+            Evacuation(FollowTarget);
+        }
     }
 
     /// <summary>
