@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using Unity.MLAgents;
 using UnityEngine;
 using Constants;
+using UtilityFuncs;
+using UnityEngine.UI;
+using TMPro; 
 
 /// <summary>
 /// 環境に関するスクリプトのエントリポイント。Fieldオブジェクトにアタッチされる想定
@@ -11,6 +14,7 @@ using Constants;
 public class EnvManager : MonoBehaviour {
 
     [Header("Environment Parameters")]
+    [Tooltip("Max Environment Steps")] public int MaxEnvironmentSteps = 1000; //秒＝
     public int MaxTowerCount;
     public int MinTowerCount = 1;
     public int MinTowerCapacity = 1;
@@ -22,23 +26,49 @@ public class EnvManager : MonoBehaviour {
     [Header("GameObjects")]
     public GameObject Tower;
     public GameObject Evacuee;
+    public List<GameObject> Evacuees;
     public GameObject floor;
+    
+    [Header("UI Elements")]
+    public TextMeshProUGUI stepCounter;
 
+    public Utils Util;
+
+    public delegate void EvacueeAllHandler();
+    public EvacueeAllHandler OnEvacueeAll;
     private SimpleMultiAgentGroup Agents;
     private string LogPrefix = "EnvManager: ";
+    private int m_ResetTimer;
 
     void Start() {
         if(MinTowerCount < 0) {
             Debug.LogWarning(LogPrefix + "MinTowerCount must larger than 0");
         }
         Agents = new SimpleMultiAgentGroup();
+        Util = GetComponent<Utils>();
+        RegisterAgents("Agent");
+        init();
+    }
+
+    void FixedUpdate() {
+        m_ResetTimer += 1;
+        if (m_ResetTimer >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0) {
+            Agents.GroupEpisodeInterrupted();
+            init();
+        }
+        if (isEvacueeAll()) {
+            OnEvacueeAll?.Invoke();
+            OnEvacueeAllHandler();
+        }
+        UpdateStepCounterUI();
     }
 
     /// <summary>
-    /// 環境の初期化,エピソード開始時にコールされる
+    /// 環境の初期化,全体エピソード開始時にコールされる
     /// </summary>
     public void init() {
-        RegisterAgents("Agent");
+        m_ResetTimer = 0;
+        Evacuees = new List<GameObject>();
         //生成する避難タワーの総数をランダムに設定
         int countTowers = UnityEngine.Random.Range(MinTowerCount, MaxTowerCount);
         for(int i = 0; i < countTowers; i++) {
@@ -85,6 +115,7 @@ public class EnvManager : MonoBehaviour {
         GameObject newObject = Instantiate(Evacuee, randomPosition, Quaternion.identity);
         newObject.transform.parent = transform;
         newObject.tag = "Evacuee";
+        Evacuees.Add(newObject);
     }
 
     private Vector3 GenerateRandomPosition(Vector3 center, Vector3 size) {
@@ -96,6 +127,34 @@ public class EnvManager : MonoBehaviour {
         return new Vector3(x, center.y, z);
     }
 
+    /// <summary>
+    /// Evacueesの全員が避難したかどうかを判定
+    /// </summary>
+    private bool isEvacueeAll() {
+        foreach (GameObject evacuee in Evacuees) {
+            Evacuee eva = evacuee.GetComponent<Evacuee>();
+            if (!eva.isEvacuate) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /// <summary>
+    /// 全ての避難者が避難したときのイベントハンドラー
+    /// </summary>
+    private void OnEvacueeAllHandler() {
+        Debug.Log("All Evacuees are evacuated");
+        Agents.EndGroupEpisode();
+        init();
+    }
+
+
+    private void UpdateStepCounterUI() {
+        if (stepCounter != null) {
+            stepCounter.text = $"Steps: {m_ResetTimer}";
+        }
+    }
 
 
 }

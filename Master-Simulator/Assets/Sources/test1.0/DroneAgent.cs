@@ -16,17 +16,22 @@ public class DroneAgent : Agent {
     private DroneController _controller;
     private EnvManager _env;
 
-    private Utils Utils = new Utils();
+    private string LogPrefix = "DroneAgent: ";
 
 
     void Start() {
         _controller = GetComponent<DroneController>();
         _env = GetComponentInParent<EnvManager>();
         _controller.RegisterTeam(gameObject.tag);
+        _controller.onCrash += OnCrash;
+    }
+
+    public override void Initialize() {
+        Debug.Log(LogPrefix + "Initialize");
+        //_env.init();
     }
 
     public override void OnEpisodeBegin() {
-        //_env.InitializeRandomPositions();
         Reset();
     }
 
@@ -41,13 +46,21 @@ public class DroneAgent : Agent {
         sensor.AddObservation(transform.localPosition);
         sensor.AddObservation(_controller.Rbody.velocity);
         //各避難タワーからの観測情報を追加
+        //観測サイズを固定しないといけないので、最大数の避難タワーを観測情報に追加(残りは空：ZeroVector, 0)
         List<GameObject> towers = GetsTowers();
-        foreach (GameObject tower in towers) {
-            sensor.AddObservation(tower.transform.localPosition);
-            sensor.AddObservation(tower.GetComponent<Tower>().currentCapacity);
+        int currentTowerCount = towers.Count;
+        sensor.AddObservation(currentTowerCount);
+        for(int i = 0; i < _env.MaxTowerCount; i++) {
+            if(i < currentTowerCount) {
+                sensor.AddObservation(towers[i].transform.localPosition);
+                sensor.AddObservation(towers[i].GetComponent<Tower>().currentCapacity);
+            } else {
+                sensor.AddObservation(Vector3.zero);
+                sensor.AddObservation(0);
+            }
         }
         //現在誘導している避難者の数を観測情報に追加
-        //sensor.AddObservation(guidedCount);
+        sensor.AddObservation(guidedEvacuees.Count);
 
     }
 
@@ -68,16 +81,35 @@ public class DroneAgent : Agent {
     /// 避難タワー毎の座標を取得する
     /// </summary>
     private List<GameObject> GetsTowers() {
-        List<GameObject> towers = Utils.GetGameObjectsFromTagOnLocal(_env.gameObject, Tags.Tower);
-        foreach (GameObject tower in towers) {
+        List<GameObject> towers = _env.Util.GetGameObjectsFromTagOnLocal(_env.gameObject, Tags.Tower);
+        // 何故かリストがループ中に変更されてしまうので、新しいリストに追加
+        List<GameObject> collectionTowers = new List<GameObject>(towers);
+        foreach (GameObject tower in collectionTowers) {
             towers.Add(tower);
         }
         return towers;
     }
 
+    /** Drone Event Handlers */
+
+    /// <summary>
+    /// ドローンが壁など、衝突した際のイベントハンドラー
+    /// </summary>
+    /// <param name="position">
+    /// 衝突した位置
+    /// </param>
+    private void OnCrash(Vector3 position) {
+        Debug.Log(LogPrefix + "Crash");
+        //SetReward(-1.0f);
+        EndEpisode();
+    }
+
     private void Reset() {
         //transform.localPosition = StartPosition;
         //transform.localRotation = Quaternion.Euler(0, 0, 0);
+        //とりあえず、0地点にリセット
+        transform.localPosition = Vector3.zero;
+        transform.localRotation = Quaternion.Euler(0, 0, 0);
         _controller.batteryLevel = 100;
         _controller.Rbody.velocity = Vector3.zero;
         _controller.Rbody.useGravity = false;

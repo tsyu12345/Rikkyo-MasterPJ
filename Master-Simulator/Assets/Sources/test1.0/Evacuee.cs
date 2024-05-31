@@ -14,14 +14,20 @@ public class Evacuee : MonoBehaviour {
     public string Gender; // 性別
     public float Speed; //移動速度
     public int SearchRadius; //探索範囲
+    [Header("Evacuee Situations")]
+    public bool isEvacuate = false;
     [Header("Evacuee Targets")]
     public bool isFollowingDrone = false;
     public GameObject FollowTarget;
-    private Utils Utils = new Utils();
+
+    private GameObject followedDrone = null;
+
+    private EnvManager _env;
 
     void Start() {
         //デフォルトでは自身の1つ上の親オブジェクトをフィールドとして設定
         Field = transform.parent.gameObject;
+        _env = Field.GetComponent<EnvManager>();
     }
     
     void Update() {
@@ -36,7 +42,7 @@ public class Evacuee : MonoBehaviour {
             Move();
         }
         //避難タワーに到達した場合、避難処理を行う
-        if(!isFollowingDrone || Vector3.Distance(transform.localPosition, FollowTarget.transform.localPosition) < 1.0f) {
+        if(!isFollowingDrone && Vector3.Distance(transform.localPosition, FollowTarget.transform.localPosition) < 1.0f) {
             Evacuation(FollowTarget);
         }
     }
@@ -50,6 +56,9 @@ public class Evacuee : MonoBehaviour {
         Tower tower = targetTower.GetComponent<Tower>();
         if(tower.currentCapacity > 0) {
             tower.NowAccCount++;
+            isEvacuate = true;
+            //避難処理が完了した場合、自身を非アクティブ化
+            gameObject.SetActive(false);
         } else { //キャパシティがいっぱいの場合、次のタワーを探す
             List<GameObject> towers = SearchTowers(tower.uuid);
             if(towers.Count > 0) {
@@ -75,11 +84,19 @@ public class Evacuee : MonoBehaviour {
             if (hitCollider.CompareTag(Tags.Agent)) {
                 isFollowingDrone = true;
                 FollowTarget = hitCollider.gameObject;
+                followedDrone = hitCollider.gameObject;
+                SendAddSignalForDrone(followedDrone);
                 return;
             }
         }
+        //Debug用に探索範囲を表示
+        Debug.DrawLine(transform.position, transform.position + new Vector3(SearchRadius, 0, 0), Color.green);
         isFollowingDrone = false;
         FollowTarget = null;
+        if(followedDrone != null) {
+            SendRemoveSignalForDrone(followedDrone);
+            followedDrone = null;
+        }
     }
     
     /// <summary>
@@ -89,7 +106,7 @@ public class Evacuee : MonoBehaviour {
     /// <param name="excludeUUID">除外するタワーのUUID.未指定の場合はnull</param>
     /// <returns>localField内のTowerオブジェクトのリスト</returns>
     private List<GameObject> SearchTowers(string excludeUUID=null) {
-        List<GameObject> towers = Utils.GetGameObjectsFromTagOnLocal(Field, Tags.Tower);
+        List<GameObject> towers = _env.Util.GetGameObjectsFromTagOnLocal(Field, Tags.Tower);
         Debug.Log($"Towers Count: {towers.Count}");
         List<GameObject> sortedTowers = new List<GameObject>();
         foreach (var tower in towers) {
@@ -107,12 +124,20 @@ public class Evacuee : MonoBehaviour {
     }
 
 
-    private void SendSignalForDrone(GameObject drone) {
+    private void SendAddSignalForDrone(GameObject drone) {
         DroneAgent agent = drone.GetComponent<DroneAgent>();
         // 既に誘導中の場合は無視(リストに含まれている場合は無視)
         if(agent.guidedEvacuees.Contains(gameObject)) {
             return;
         }
         agent.guidedEvacuees.Add(gameObject);
+    }
+
+
+    private void SendRemoveSignalForDrone(GameObject drone) {
+        DroneAgent agent = drone.GetComponent<DroneAgent>();
+        if(agent.guidedEvacuees.Contains(gameObject)) {
+            agent.guidedEvacuees.Remove(gameObject);
+        }
     }
 }
