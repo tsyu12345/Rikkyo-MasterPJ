@@ -60,13 +60,15 @@ public class EnvManager : MonoBehaviour {
             OnEvacueeAll?.Invoke();
             OnEvacueeAllHandler();
         }
-        UpdateStepCounterUI();
+        UpdateStepTimerUI();
     }
 
     /// <summary>
     /// 環境の初期化,全体エピソード開始時にコールされる
     /// </summary>
     public void init() {
+        RemoveAllTowers();
+        RemoveAllEvacuees();
         m_ResetTimer = 0;
         Evacuees = new List<GameObject>();
         //生成する避難タワーの総数をランダムに設定
@@ -118,6 +120,21 @@ public class EnvManager : MonoBehaviour {
         Evacuees.Add(newObject);
     }
 
+
+    private void RemoveAllTowers() {
+        GameObject[] towers = GameObject.FindGameObjectsWithTag(Tags.Tower);
+        foreach (GameObject tower in towers) {
+            Destroy(tower);
+        }
+    }
+
+    private void RemoveAllEvacuees() {
+        foreach (GameObject evacuee in Evacuees) {
+            Destroy(evacuee);
+        }
+        Evacuees.Clear();
+    }
+
     private Vector3 GenerateRandomPosition(Vector3 center, Vector3 size) {
         float x = UnityEngine.Random.Range(center.x - size.x / 2, center.x + size.x / 2);
         float z = UnityEngine.Random.Range(center.z - size.z / 2, center.z + size.z / 2);
@@ -150,9 +167,9 @@ public class EnvManager : MonoBehaviour {
     }
 
 
-    private void UpdateStepCounterUI() {
+    private void UpdateStepTimerUI() {
         if (stepCounter != null) {
-            stepCounter.text = $"Steps: {m_ResetTimer}";
+            stepCounter.text = $"Remain Steps : {MaxEnvironmentSteps - m_ResetTimer}";
         }
     }
 
