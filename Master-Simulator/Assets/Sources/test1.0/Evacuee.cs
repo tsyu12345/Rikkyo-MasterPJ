@@ -23,6 +23,7 @@ public class Evacuee : MonoBehaviour {
     public float TargetDistance;
 
     private GameObject followedDrone = null;
+    private List<string> excludeTowers;
 
     private EnvManager _env;
 
@@ -30,12 +31,13 @@ public class Evacuee : MonoBehaviour {
         //デフォルトでは自身の1つ上の親オブジェクトをフィールドとして設定
         Field = transform.parent.gameObject;
         _env = Field.GetComponent<EnvManager>();
+        excludeTowers = new List<string>();
     }
     
     void Update() {
         SearchDrone();
         if(!isFollowingDrone || FollowTarget == null) {
-            List<GameObject> towers = SearchTowers();
+            List<GameObject> towers = SearchTowers(excludeTowers);
             if(towers.Count > 0) {
                 FollowTarget = towers[0]; //最短距離のタワーを目標に設定
             }
@@ -68,7 +70,8 @@ public class Evacuee : MonoBehaviour {
             //避難処理が完了した場合、自身を非アクティブ化
             gameObject.SetActive(false);
         } else { //キャパシティがいっぱいの場合、次のタワーを探す
-            List<GameObject> towers = SearchTowers(tower.uuid);
+            excludeTowers.Add(tower.uuid);
+            List<GameObject> towers = SearchTowers(excludeTowers);
             if(towers.Count > 0) {
                 FollowTarget = towers[0]; //最短距離のタワーを目標に設定
             }
@@ -110,14 +113,14 @@ public class Evacuee : MonoBehaviour {
     /// タグ名からタワーを検索する。こちらは探索範囲関係なく、フィールドに存在する全てのタワーを検索し、
     /// 距離別にソートして返す
     /// </summary>
-    /// <param name="excludeUUID">除外するタワーのUUID.未指定の場合はnull</param>
+    /// <param name="excludeTowerUUIDs">除外するタワーのUUID.未指定の場合はnull</param>
     /// <returns>localField内のTowerオブジェクトのリスト</returns>
-    private List<GameObject> SearchTowers(string excludeUUID=null) {
+    private List<GameObject> SearchTowers(List<string> excludeTowerUUIDs = null) {
         List<GameObject> towers = _env.Util.GetGameObjectsFromTagOnLocal(Field, Tags.Tower);
         Debug.Log($"Towers Count: {towers.Count}");
         List<GameObject> sortedTowers = new List<GameObject>();
         foreach (var tower in towers) {
-            if(excludeUUID != null && tower.GetComponent<Tower>().uuid == excludeUUID) {
+            if(excludeTowerUUIDs != null && excludeTowerUUIDs.Contains(tower.GetComponent<Tower>().uuid)) {
                 continue;
             }
             sortedTowers.Add(tower);
