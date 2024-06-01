@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Constants;
 
 /// <summary>
 /// 津波避難タワーに関するスクリプト（オブジェクト１台分）
@@ -13,6 +14,8 @@ public class Tower : MonoBehaviour{
 
     public string uuid { get; set; } //タワーの識別子
 
+    private string LogPrefix = "Tower: ";
+
     /**Events */
     public delegate void AcceptRejected(int NowAccCount) ; //収容定員が超過した時に発火する
     public AcceptRejected onRejected;
@@ -21,6 +24,14 @@ public class Tower : MonoBehaviour{
         currentCapacity = MaxCapacity - NowAccCount;
         if (currentCapacity <= 0) {
             onRejected?.Invoke(NowAccCount);
+        }
+    }
+
+    void OnTriggerEnter(Collider other) {
+        Debug.Log(LogPrefix + "OnTriggerEnter: " + other.tag);
+        if (other.CompareTag(Tags.Evacuee)) {
+            Evacuee evacuee = other.GetComponent<Evacuee>();
+            evacuee.Evacuation(this.gameObject);
         }
     }
 }

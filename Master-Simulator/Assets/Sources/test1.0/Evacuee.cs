@@ -14,7 +14,6 @@ public class Evacuee : MonoBehaviour {
     public string Gender; // 性別
     public float Speed; //移動速度
     public int SearchRadius; //探索範囲
-    public float EvacuationJudgmentDistance; //避難判定距離
     [Header("Evacuee Situations")]
     public bool isEvacuate = false;
     [Header("Evacuee Targets")]
@@ -26,6 +25,7 @@ public class Evacuee : MonoBehaviour {
     private List<string> excludeTowers;
 
     private EnvManager _env;
+    private string LogPrefix = "Evacuee: ";
 
     void Start() {
         //デフォルトでは自身の1つ上の親オブジェクトをフィールドとして設定
@@ -45,10 +45,6 @@ public class Evacuee : MonoBehaviour {
         if(FollowTarget != null) {
             Move();
         }
-        //避難タワーに到達した場合、避難処理を行う
-        if(!isFollowingDrone && Vector3.Distance(transform.localPosition, FollowTarget.transform.localPosition) < EvacuationJudgmentDistance) {
-            Evacuation(FollowTarget);
-        }
     }
 
     void FixedUpdate() {
@@ -57,11 +53,15 @@ public class Evacuee : MonoBehaviour {
         }
     }
 
+    void OnTriggerEnter(Collider other) {
+        Debug.Log(LogPrefix + "OnTriggerEnter: " + other.tag);
+    }
+
     /// <summary>
     /// タワーへの避難を行う
     /// </summary>
     /// <param name="tower">タワーオブジェクト</param>
-    private void Evacuation(GameObject targetTower) {
+    public void Evacuation(GameObject targetTower) {
         //Towerクラスを取得
         Tower tower = targetTower.GetComponent<Tower>();
         if(tower.currentCapacity > 0) {

@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 23082483581203986}
   - component: {fileID: 2407799619923258667}
   - component: {fileID: 64813607633436090}
+  - component: {fileID: 926971849253677949}
   m_Layer: 0
   m_Name: Tower_B
   m_TagString: Untagged
@@ -132,3 +133,24 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300000, guid: 64ac5799e2f7c6c4089346a3a125313f, type: 3}
+--- !u!135 &926971849253677949
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1930365806956314}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 3
+  m_Center: {x: -0.80080515, y: 0, z: -0.68408155}
