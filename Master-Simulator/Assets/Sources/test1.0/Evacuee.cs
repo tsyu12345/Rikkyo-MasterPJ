@@ -14,11 +14,13 @@ public class Evacuee : MonoBehaviour {
     public string Gender; // 性別
     public float Speed; //移動速度
     public int SearchRadius; //探索範囲
+    public float EvacuationJudgmentDistance; //避難判定距離
     [Header("Evacuee Situations")]
     public bool isEvacuate = false;
     [Header("Evacuee Targets")]
     public bool isFollowingDrone = false;
     public GameObject FollowTarget;
+    public float TargetDistance;
 
     private GameObject followedDrone = null;
 
@@ -42,8 +44,14 @@ public class Evacuee : MonoBehaviour {
             Move();
         }
         //避難タワーに到達した場合、避難処理を行う
-        if(!isFollowingDrone && Vector3.Distance(transform.localPosition, FollowTarget.transform.localPosition) < 1.0f) {
+        if(!isFollowingDrone && Vector3.Distance(transform.localPosition, FollowTarget.transform.localPosition) < EvacuationJudgmentDistance) {
             Evacuation(FollowTarget);
+        }
+    }
+
+    void FixedUpdate() {
+        if(FollowTarget != null) {
+            TargetDistance = Vector3.Distance(transform.localPosition, FollowTarget.transform.localPosition);
         }
     }
 
@@ -72,8 +80,7 @@ public class Evacuee : MonoBehaviour {
     /// 目的地に向かって移動する
     /// </summary>
     private void Move() {
-        //y = 1は保ったまま、x,zのみ移動
-        Vector3 pos = new Vector3(FollowTarget.transform.position.x, 1, FollowTarget.transform.position.z);
+        Vector3 pos = new Vector3(FollowTarget.transform.position.x, 1.3f, FollowTarget.transform.position.z);
         transform.position = Vector3.MoveTowards(transform.position, pos, Speed * Time.deltaTime);
     }
 
