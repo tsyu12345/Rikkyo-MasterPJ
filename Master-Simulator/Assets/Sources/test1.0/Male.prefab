@@ -627,7 +627,6 @@ GameObject:
   m_Component:
   - component: {fileID: 4287521319272158202}
   - component: {fileID: 5058629982759441187}
-  - component: {fileID: 6706516709463991153}
   - component: {fileID: 8921895484370172350}
   - component: {fileID: 8249752773613256293}
   m_Layer: 0
@@ -700,14 +699,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &6706516709463991153
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4292483442753368924}
-  m_Mesh: {fileID: 0}
 --- !u!222 &8921895484370172350
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1012,6 +1003,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4196316760225541069}
   - component: {fileID: 3477607201894031604}
+  - component: {fileID: 5176567995955276784}
   m_Layer: 0
   m_Name: Male
   m_TagString: Evacuee
@@ -1050,10 +1042,35 @@ MonoBehaviour:
   Field: {fileID: 0}
   Age: 20
   Gender: Male
-  Speed: 20
+  Speed: 10
   SearchRadius: 10
+  isEvacuate: 0
   isFollowingDrone: 0
   FollowTarget: {fileID: 0}
+  TargetDistance: 0
+--- !u!136 &5176567995955276784
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5546130947071963072}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 1
+  m_Height: 3
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &6260146983419896662
 GameObject:
   m_ObjectHideFlags: 0
@@ -1367,7 +1384,6 @@ GameObject:
   m_Component:
   - component: {fileID: 227224405863912778}
   - component: {fileID: 3031662887903283815}
-  - component: {fileID: 3544478482785037327}
   - component: {fileID: 3444672477174529586}
   - component: {fileID: 4371826259670745567}
   m_Layer: 0
@@ -1440,14 +1456,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &3544478482785037327
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7339903973116687259}
-  m_Mesh: {fileID: 0}
 --- !u!222 &3444672477174529586
 CanvasRenderer:
   m_ObjectHideFlags: 0

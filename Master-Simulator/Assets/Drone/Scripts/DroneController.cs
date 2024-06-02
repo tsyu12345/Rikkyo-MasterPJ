@@ -39,7 +39,7 @@ public class DroneController : MonoBehaviour {
 
     void Start() {
         Rbody = GetComponent<Rigidbody>();
-        communicateArea.transform.localScale = new Vector3(communicationRange, communicationRange, communicationRange);
+        //communicateArea.transform.localScale = new Vector3(communicationRange, communicationRange, communicationRange);
         StartCoroutine(BatteryDrainCoroutine());
     }
 
