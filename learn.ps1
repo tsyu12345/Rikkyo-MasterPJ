@@ -4,7 +4,7 @@ param(
     [bool]$force = $false
 )
 
-$configurePath = "Master-Simulator\config\model-demo.yaml"
+$configurePath = "Master-Simulator\config\test1_0.yaml"
 
 if($force) {
     mlagents-learn $configurePath --run-id=$modelId --force
