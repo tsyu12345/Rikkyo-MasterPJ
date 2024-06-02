@@ -20,10 +20,18 @@ public class Tower : MonoBehaviour{
     public delegate void AcceptRejected(int NowAccCount) ; //収容定員が超過した時に発火する
     public AcceptRejected onRejected;
 
+    private MeshRenderer ExMark; //受け入れ不可を示すマーク
+
+    void Start() {
+        ExMark = transform.Find("ExMark").GetComponent<MeshRenderer>();
+        ExMark.enabled = false;
+    }
+
     void Update() {
         currentCapacity = MaxCapacity - NowAccCount;
         if (currentCapacity <= 0) {
             onRejected?.Invoke(NowAccCount);
+            ExMark.enabled = true;
         }
     }
 
