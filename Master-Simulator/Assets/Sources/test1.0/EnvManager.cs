@@ -15,6 +15,7 @@ using TMPro;
 public class EnvManager : MonoBehaviour {
 
     [Header("Environment Parameters")]
+    public float EvacuationRate = 0.0f;
     [Tooltip("Max Environment Steps")] public int MaxEnvironmentSteps = 1000; 
     /** 避難タワーの設定*/
     public int MaxTowerCount;
@@ -38,6 +39,7 @@ public class EnvManager : MonoBehaviour {
     
     [Header("UI Elements")]
     public TextMeshProUGUI stepCounter;
+    public TextMeshProUGUI evacRateCounter;
 
     public Utils Util;
 
@@ -67,7 +69,8 @@ public class EnvManager : MonoBehaviour {
             OnEvacueeAll?.Invoke();
             OnEvacueeAllHandler();
         }
-        UpdateStepTimerUI();
+        EvacuationRate = CalcEvacuationRate();
+        UpdateUI();
     }
 
     /// <summary>
@@ -189,15 +192,32 @@ public class EnvManager : MonoBehaviour {
     /// </summary>
     private void OnEvacueeAllHandler() {
         Debug.Log("All Evacuees are evacuated");
+        //全体報酬を避難率に応じて設定
+        EvacuationRate = CalcEvacuationRate();
+        Agents.AddGroupReward(EvacuationRate);
         Agents.EndGroupEpisode();
         init();
     }
 
 
-    private void UpdateStepTimerUI() {
+    private void UpdateUI() {
         if (stepCounter != null) {
             stepCounter.text = $"Remain Steps : {MaxEnvironmentSteps - m_ResetTimer}";
         }
+        if (evacRateCounter != null) {
+            int currentRate = (int)(EvacuationRate * 100);
+            evacRateCounter.text = $"Rate : {currentRate}%";
+        }
+    }
+
+    private float CalcEvacuationRate() {
+        int evacuatedCount = 0;
+        foreach (GameObject evacuee in Evacuees) {
+            if (!evacuee.activeSelf) {
+                evacuatedCount++;
+            }
+        }
+        return (float)evacuatedCount / Evacuees.Count;
     }
 
 
