@@ -194,7 +194,9 @@ public class EnvManager : MonoBehaviour {
         Debug.Log("All Evacuees are evacuated");
         //全体報酬を避難率に応じて設定
         EvacuationRate = CalcEvacuationRate();
-        Agents.AddGroupReward(EvacuationRate);
+        // かかったステップ数を引き、制限時間に達した場合は報酬が０になるように設定
+        float timeRate = m_ResetTimer / (float)MaxEnvironmentSteps;
+        Agents.AddGroupReward(EvacuationRate - timeRate);
         Agents.EndGroupEpisode();
         init();
     }

@@ -16,6 +16,8 @@ public class DroneAgent : Agent {
     private DroneController _controller;
     private EnvManager _env;
 
+    private Vector3 StartPos;
+
     private string LogPrefix = "DroneAgent: ";
 
 
@@ -24,6 +26,8 @@ public class DroneAgent : Agent {
         _env = GetComponentInParent<EnvManager>();
         _controller.RegisterTeam(gameObject.tag);
         _controller.onCrash += OnCrash;
+        // 初期位置を保存
+        StartPos = transform.localPosition;
     }
 
     public override void Initialize() {
@@ -47,6 +51,7 @@ public class DroneAgent : Agent {
     public override void CollectObservations(VectorSensor sensor) {
         //自身の位置・速度を観測情報に追加
         sensor.AddObservation(transform.localPosition);
+        
         //各避難タワーからの観測情報を追加
         //観測サイズを固定しないといけないので、最大数の避難タワーを観測情報に追加(残りは空：ZeroVector, -1)
         List<GameObject> towers = GetsTowers();
@@ -88,7 +93,7 @@ public class DroneAgent : Agent {
         //誘導中の避難者が避難できた（active == false）の場合、報酬を設定
         foreach(GameObject evacuee in guidedEvacuees) {
             if(evacuee.activeSelf == false) {
-                AddReward(1.0f);
+                AddReward(0.5f);
                 guidedEvacuees.Remove(evacuee);
             }
         }
@@ -122,14 +127,14 @@ public class DroneAgent : Agent {
     private void OnCrash(Vector3 position) {
         Debug.Log(LogPrefix + "Crash");
         //SetReward(-1.0f);
+        SetReward(-1f);
         EndEpisode();
     }
 
     private void Reset() {
-        //transform.localPosition = StartPosition;
+        transform.localPosition = StartPos;
         //transform.localRotation = Quaternion.Euler(0, 0, 0);
         //とりあえず、0地点にリセット
-        transform.localPosition = Vector3.zero;
         transform.localRotation = Quaternion.Euler(0, 0, 0);
         _controller.batteryLevel = 100;
         _controller.Rbody.velocity = Vector3.zero;

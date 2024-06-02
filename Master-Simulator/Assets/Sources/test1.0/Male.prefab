@@ -1042,8 +1042,8 @@ MonoBehaviour:
   Field: {fileID: 0}
   Age: 20
   Gender: Male
-  Speed: 10
-  SearchRadius: 10
+  Speed: 7
+  SearchRadius: 15
   isEvacuate: 0
   isFollowingDrone: 0
   FollowTarget: {fileID: 0}
