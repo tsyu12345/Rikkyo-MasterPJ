@@ -69,7 +69,6 @@ public class Evacuee : MonoBehaviour {
             isEvacuate = true;
             //避難処理が完了した場合、自身を非アクティブ化
             gameObject.SetActive(false);
-            SendRemoveSignalForDrone(followedDrone);
         } else { //キャパシティがいっぱいの場合、次のタワーを探す
             excludeTowers.Add(tower.uuid);
             List<GameObject> towers = SearchTowers(excludeTowers);

@@ -38,15 +38,17 @@ public class DroneAgent : Agent {
     /// <summary>
     /// 観測情報
     /// １．自身の速度 Vector3
-    /// ２．避難所の位置 Vector3
+    /// ２．各避難タワーの位置 Vector3
+    /// ３．各避難タワーの収容人数 int
+    /// ４．現在誘導している避難者の数 int
+    /// ５．全避難者の座標 Vector3    
     /// </summary>
     /// <param name="sensor"></param>
     public override void CollectObservations(VectorSensor sensor) {
         //自身の位置・速度を観測情報に追加
         sensor.AddObservation(transform.localPosition);
-        sensor.AddObservation(_controller.Rbody.velocity);
         //各避難タワーからの観測情報を追加
-        //観測サイズを固定しないといけないので、最大数の避難タワーを観測情報に追加(残りは空：ZeroVector, 0)
+        //観測サイズを固定しないといけないので、最大数の避難タワーを観測情報に追加(残りは空：ZeroVector, -1)
         List<GameObject> towers = GetsTowers();
         int currentTowerCount = towers.Count;
         sensor.AddObservation(currentTowerCount);
@@ -56,11 +58,21 @@ public class DroneAgent : Agent {
                 sensor.AddObservation(towers[i].GetComponent<Tower>().currentCapacity);
             } else {
                 sensor.AddObservation(Vector3.zero);
-                sensor.AddObservation(0);
+                sensor.AddObservation(-1);
             }
         }
         //現在誘導している避難者の数を観測情報に追加
         sensor.AddObservation(guidedEvacuees.Count);
+        //全避難者の座標を観測情報に追加
+        List<GameObject> evacuees = _env.Util.GetGameObjectsFromTagOnLocal(_env.gameObject, Tags.Evacuee);
+        Debug.Log(LogPrefix + "Recognizing Evacuees: " + evacuees.Count);
+        for(int i = 0; i < _env.MaxEvacueeCount; i++) {
+            if(i < evacuees.Count) {
+                sensor.AddObservation(evacuees[i].transform.localPosition);
+            } else {
+                sensor.AddObservation(Vector3.zero);
+            }
+        }
 
     }
 
@@ -71,6 +83,15 @@ public class DroneAgent : Agent {
     /// <param name="actions"></param>
     public override void OnActionReceived(ActionBuffers actions) {
         _controller.FlyingCtrl(actions);
+        // 現在誘導中の避難者の数を取得し、報酬を設定
+        SetReward(guidedEvacuees.Count * 0.1f);
+        //誘導中の避難者が避難できた（active == false）の場合、報酬を設定
+        foreach(GameObject evacuee in guidedEvacuees) {
+            if(evacuee.activeSelf == false) {
+                AddReward(1.0f);
+                guidedEvacuees.Remove(evacuee);
+            }
+        }
     }
 
     public override void Heuristic(in ActionBuffers actionsOut) {
