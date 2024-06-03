@@ -32,6 +32,7 @@ public class EnvManager : MonoBehaviour {
     [Header("GameObjects")]
     public GameObject Tower;
     public GameObject Evacuee;
+    public GameObject EvacueesSpawn;
     public GameObject Agent;
     public List<GameObject> Evacuees;
     public List<GameObject> Towers;
@@ -137,13 +138,9 @@ public class EnvManager : MonoBehaviour {
     }
 
     private void SpawnEvacuee() {
-        Vector3 size = floor.GetComponent<Collider>().bounds.size;
-        Vector3 center = floor.transform.position;
-        center.y = 1.3f;
-        Vector3 randomPosition = GenerateRandomPosition(center, size);
-        
         // 親のGameObjectの子としてPrefabを生成
-        GameObject newObject = Instantiate(Evacuee, randomPosition, Quaternion.identity);
+        Vector3 spawnPos = EvacueesSpawn.transform.position;
+        GameObject newObject = Instantiate(Evacuee, spawnPos, Quaternion.identity);
         newObject.transform.parent = transform;
         newObject.tag = Tags.Evacuee;
         Evacuees.Add(newObject);

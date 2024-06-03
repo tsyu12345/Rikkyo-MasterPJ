@@ -91,10 +91,10 @@ public class DroneAgent : Agent {
         // 現在誘導中の避難者の数を取得し、報酬を設定
         SetReward(guidedEvacuees.Count * 0.1f);
         //誘導中の避難者が避難できた（active == false）の場合、報酬を設定
-        foreach(GameObject evacuee in guidedEvacuees) {
+        var evacuees = new List<GameObject>(guidedEvacuees); // ループ中にリストが変更されるのを防ぐため、新しいリストを作成
+        foreach(GameObject evacuee in evacuees) {
             if(evacuee.activeSelf == false) {
                 AddReward(0.5f);
-                guidedEvacuees.Remove(evacuee);
             }
         }
     }

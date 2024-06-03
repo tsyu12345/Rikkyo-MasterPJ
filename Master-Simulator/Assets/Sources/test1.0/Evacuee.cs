@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 using UtilityFuncs;
 using Constants;
 
@@ -26,12 +27,24 @@ public class Evacuee : MonoBehaviour {
 
     private EnvManager _env;
     private string LogPrefix = "Evacuee: ";
+    private NavMeshAgent navMeshAgent = null;
+    private LineRenderer lineRenderer;
+    
 
     void Start() {
         //デフォルトでは自身の1つ上の親オブジェクトをフィールドとして設定
         Field = transform.parent.gameObject;
         _env = Field.GetComponent<EnvManager>();
         excludeTowers = new List<string>();
+        navMeshAgent = GetComponent<NavMeshAgent>();
+        navMeshAgent.speed = Speed;
+        lineRenderer = GetComponent<LineRenderer>();
+        lineRenderer.startWidth = 0.1f;
+        lineRenderer.endWidth = 0.1f;
+        lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        lineRenderer.positionCount = 0;
+
+        transform.position = new Vector3(transform.position.x, 1.5f, transform.position.z);
     }
     
     void Update() {
@@ -51,6 +64,7 @@ public class Evacuee : MonoBehaviour {
         if(FollowTarget != null) {
             TargetDistance = Vector3.Distance(transform.localPosition, FollowTarget.transform.localPosition);
         }
+        DrawPath();
     }
 
     void OnTriggerEnter(Collider other) {
@@ -68,6 +82,9 @@ public class Evacuee : MonoBehaviour {
             tower.NowAccCount++;
             isEvacuate = true;
             //避難処理が完了した場合、自身を非アクティブ化
+            if(isFollowingDrone && followedDrone != null) {
+                SendRemoveSignalForDrone(followedDrone);
+            }
             gameObject.SetActive(false);
         } else { //キャパシティがいっぱいの場合、次のタワーを探す
             excludeTowers.Add(tower.uuid);
@@ -83,8 +100,11 @@ public class Evacuee : MonoBehaviour {
     /// 目的地に向かって移動する
     /// </summary>
     private void Move() {
-        Vector3 pos = new Vector3(FollowTarget.transform.position.x, 1.3f, FollowTarget.transform.position.z);
-        transform.position = Vector3.MoveTowards(transform.position, pos, Speed * Time.deltaTime);
+        if(navMeshAgent == null) {
+            return;
+        }
+        Vector3 destination = new Vector3(FollowTarget.transform.position.x, transform.position.y, FollowTarget.transform.position.z);
+        navMeshAgent.SetDestination(destination);
     }
 
 
@@ -124,11 +144,8 @@ public class Evacuee : MonoBehaviour {
             }
             sortedTowers.Add(tower);
         }
+
         sortedTowers.Sort((a, b) => Vector3.Distance(a.transform.position, transform.position).CompareTo(Vector3.Distance(b.transform.position, transform.position)));
-        //Debug用にマーカーを表示
-        foreach (var tower in sortedTowers) {
-            Debug.DrawLine(transform.position, tower.transform.position, Color.red);
-        }
         return sortedTowers;
     }
 
@@ -147,6 +164,20 @@ public class Evacuee : MonoBehaviour {
         DroneAgent agent = drone.GetComponent<DroneAgent>();
         if(agent.guidedEvacuees.Contains(gameObject)) {
             agent.guidedEvacuees.Remove(gameObject);
+        }
+    }
+
+    private void DrawPath() {
+        if(navMeshAgent == null || isFollowingDrone) {
+            return;
+        }
+        if(navMeshAgent.path.corners.Length < 2) {
+            return;
+        }
+        lineRenderer.positionCount = navMeshAgent.path.corners.Length;
+        lineRenderer.SetPosition(0, transform.position);
+        for (int i = 1; i < navMeshAgent.path.corners.Length; i++) {
+            lineRenderer.SetPosition(i, navMeshAgent.path.corners[i]);
         }
     }
 }
