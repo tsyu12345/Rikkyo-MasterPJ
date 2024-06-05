@@ -32,6 +32,7 @@ public class EnvManager : MonoBehaviour {
     [Header("GameObjects")]
     public GameObject Tower;
     public GameObject Evacuee;
+    public GameObject TowerSpawn;
     public GameObject EvacueesSpawn;
     public GameObject Agent;
     public List<GameObject> Evacuees;
@@ -46,9 +47,13 @@ public class EnvManager : MonoBehaviour {
 
     public delegate void EvacueeAllHandler();
     public EvacueeAllHandler OnEvacueeAll;
+    public delegate void EndEpisodeHandler(float evacueeRate);
+    public EndEpisodeHandler OnEndEpisode;
+
     private SimpleMultiAgentGroup Agents;
     private string LogPrefix = "EnvManager: ";
     private int m_ResetTimer;
+    private delegate void SpawnCallback(GameObject obj);
 
     void Start() {
         if(MinTowerCount < 0) {
@@ -56,19 +61,28 @@ public class EnvManager : MonoBehaviour {
         }
         Agents = new SimpleMultiAgentGroup();
         Util = GetComponent<Utils>();
-        RegisterAgents("Agent");
+        RegisterAgents(Tags.Agent);
         init();
+
+        OnEvacueeAll += () => {
+            AddGroupReward();
+            init();
+            Agents.EndGroupEpisode();
+        };
+        OnEndEpisode += (float evacueeRate) => {
+            AddGroupReward();
+            init();
+            Agents.GroupEpisodeInterrupted();
+        };
     }
 
     void FixedUpdate() {
         m_ResetTimer += 1;
-        if (m_ResetTimer >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0) {
-            Agents.GroupEpisodeInterrupted();
-            init();
-        }
         if (isEvacueeAll()) {
             OnEvacueeAll?.Invoke();
-            OnEvacueeAllHandler();
+        }
+        if (m_ResetTimer >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0) {
+            OnEndEpisode?.Invoke(EvacuationRate);
         }
         EvacuationRate = CalcEvacuationRate();
         UpdateUI();
@@ -78,25 +92,34 @@ public class EnvManager : MonoBehaviour {
     /// 環境の初期化,全体エピソード開始時にコールされる
     /// </summary>
     public void init() {
-        RemoveAllTowers();
-        RemoveAllEvacuees();
+        RemoveObjectAll(Tags.Tower);
+        RemoveObjectAll(Tags.Evacuee);
+        Towers.Clear();
+        Evacuees.Clear();
+
         m_ResetTimer = 0;
         Evacuees = new List<GameObject>();
         Towers = new List<GameObject>();
-        /*
-        int countAgents = UnityEngine.Random.Range(MinAgentCount, MaxAgentCount);
-        for(int i = 0; i < countAgents; i++) {
-            SpawnAgent();
-        }
-        */
-
+        
         int countTowers = UnityEngine.Random.Range(MinTowerCount, MaxTowerCount);
         for(int i = 0; i < countTowers; i++) {
-            SpawnTower();
+            SpawnObjects(Tower, TowerSpawn, (towerObj)=> {
+                //Towerのパラメータをランダムに設定
+                Tower tower = towerObj.GetComponent<Tower>();
+                tower.MaxCapacity = UnityEngine.Random.Range(MinTowerCapacity, MaxTowerCapacity);
+                tower.NowAccCount = 0;
+                tower.uuid = Guid.NewGuid().ToString();
+                towerObj.tag = Tags.Tower;
+                Towers.Add(towerObj);
+            });
         }
+
         int countEvacuees = UnityEngine.Random.Range(MinEvacueeCount, MaxEvacueeCount);
         for(int i = 0; i < countEvacuees; i++) {
-            SpawnEvacuee();
+            SpawnObjects(Evacuee, EvacueesSpawn, (evacueeObj)=> {
+                evacueeObj.tag = Tags.Evacuee;
+                Evacuees.Add(evacueeObj);
+            });
         }
     }
 
@@ -108,59 +131,26 @@ public class EnvManager : MonoBehaviour {
         }
     }
 
-    private void SpawnAgent() {    
-        Vector3 size = floor.GetComponent<Collider>().bounds.size;
-        Vector3 center = floor.transform.position;
-        Vector3 randomPosition = GenerateRandomPosition(center, size);
-        
-        GameObject newObject = Instantiate(Evacuee, randomPosition, Quaternion.identity);
-        newObject.transform.parent = transform;
-        newObject.tag = Tags.Agent;
-    }
 
-
-    private void SpawnTower() {
-        Vector3 size = floor.GetComponent<Collider>().bounds.size;
-        Vector3 center = floor.transform.position;
-        Vector3 randomPosition = GenerateRandomPosition(center, size);
-        
-        // 親のGameObjectの子としてPrefabを生成
-        GameObject newObject = Instantiate(Tower, randomPosition, Quaternion.identity);
-        newObject.transform.parent = transform;
-        newObject.tag = Tags.Tower;
-
-        //Towerのパラメータをランダムに設定
-        Tower tower = newObject.GetComponent<Tower>();
-        tower.MaxCapacity = UnityEngine.Random.Range(MinTowerCapacity, MaxTowerCapacity);
-        tower.NowAccCount = 0;
-        tower.uuid = Guid.NewGuid().ToString();
-        Towers.Add(newObject);
-    }
-
-    private void SpawnEvacuee() {
-        // 親のGameObjectの子としてPrefabを生成
-        Vector3 spawnPos = EvacueesSpawn.transform.position;
-        GameObject newObject = Instantiate(Evacuee, spawnPos, Quaternion.identity);
-        newObject.transform.parent = transform;
-        newObject.tag = Tags.Evacuee;
-        Evacuees.Add(newObject);
-    }
-
-
-    private void RemoveAllTowers() {
-        GameObject[] towers = GameObject.FindGameObjectsWithTag(Tags.Tower);
-        foreach (GameObject tower in towers) {
-            Destroy(tower);
+    private void SpawnObjects(GameObject obj, GameObject spawnArea = null, SpawnCallback callback = null) {
+        if (spawnArea == null) {
+            spawnArea = floor;
         }
-        Towers.Clear();
+        Vector3 size = spawnArea.GetComponent<Collider>().bounds.size;
+        Vector3 center = spawnArea.transform.position;
+        Vector3 randomPosition = GenerateRandomPosition(center, size);
+        GameObject newObject = Instantiate(obj, randomPosition, Quaternion.identity);
+        newObject.transform.parent = transform;
+        callback?.Invoke(newObject);
     }
 
-    private void RemoveAllEvacuees() {
-        foreach (GameObject evacuee in Evacuees) {
-            Destroy(evacuee);
+    private void RemoveObjectAll(string tag) {
+        GameObject[] objects = GameObject.FindGameObjectsWithTag(tag);
+        foreach (GameObject obj in objects) {
+            Destroy(obj);
         }
-        Evacuees.Clear();
     }
+
 
     private Vector3 GenerateRandomPosition(Vector3 center, Vector3 size) {
         float x = UnityEngine.Random.Range(center.x - size.x / 2, center.x + size.x / 2);
@@ -184,21 +174,6 @@ public class EnvManager : MonoBehaviour {
         return true;
     }
 
-    /// <summary>
-    /// 全ての避難者が避難したときのイベントハンドラー
-    /// </summary>
-    private void OnEvacueeAllHandler() {
-        Debug.Log("All Evacuees are evacuated");
-        //全体報酬を避難率に応じて設定
-        EvacuationRate = CalcEvacuationRate();
-        // かかったステップ数を引き、制限時間に達した場合は報酬が０になるように設定
-        float timeRate = m_ResetTimer / (float)MaxEnvironmentSteps;
-        Agents.AddGroupReward(EvacuationRate - timeRate);
-        Agents.EndGroupEpisode();
-        init();
-    }
-
-
     private void UpdateUI() {
         if (stepCounter != null) {
             stepCounter.text = $"Remain Steps : {MaxEnvironmentSteps - m_ResetTimer}";
@@ -217,6 +192,14 @@ public class EnvManager : MonoBehaviour {
             }
         }
         return (float)evacuatedCount / Evacuees.Count;
+    }
+
+
+    private void AddGroupReward() {
+        EvacuationRate = CalcEvacuationRate();
+        // かかったステップ数を引き、制限時間に達した場合は報酬が０になるように設定
+        float timeRate = m_ResetTimer / (float)MaxEnvironmentSteps;
+        Agents.AddGroupReward(EvacuationRate - timeRate);
     }
 
 
