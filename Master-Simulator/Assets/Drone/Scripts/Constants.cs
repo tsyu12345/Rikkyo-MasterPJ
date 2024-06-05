@@ -6,9 +6,9 @@ namespace Constants {
     }
 
     public enum DroneCtrlIndex {
-        Horizontal = 3,
-        Vertical = 2,
-        Rotation = 1,
+        Horizontal = 2,
+        Vertical = 1,
+        Rotation = 0,
         Altitude = 0
     }
 }

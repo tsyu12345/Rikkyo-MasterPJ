@@ -104,7 +104,7 @@ public class DroneController : MonoBehaviour {
         float horInput = actions.ContinuousActions[(int)DroneCtrlIndex.Horizontal]; //水平方向の入力(左右)
         float verInput = actions.ContinuousActions[(int)DroneCtrlIndex.Vertical]; //垂直方向の入力（前後）
         float rotInput = actions.ContinuousActions[(int)DroneCtrlIndex.Rotation]; //回転方向の入力
-        float altInput = actions.ContinuousActions[(int)DroneCtrlIndex.Altitude]; //高度方向の入力(上下)
+        //float altInput = actions.ContinuousActions[(int)DroneCtrlIndex.Altitude]; //高度方向の入力(上下)
 
         if (batteryLevel <= 0) {
             return;
@@ -127,11 +127,13 @@ public class DroneController : MonoBehaviour {
             Ccw(Mathf.Abs(rotInput));
         }
         //高度方向の移動
+        /*
         if(altInput > 0) {
             Up(altInput);
         } else if (altInput < 0) {
             Down(Mathf.Abs(altInput));
         }
+        */
 
 
     }

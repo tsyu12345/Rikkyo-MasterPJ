@@ -105,6 +105,8 @@ public class Evacuee : MonoBehaviour {
         }
         Vector3 destination = new Vector3(FollowTarget.transform.position.x, transform.position.y, FollowTarget.transform.position.z);
         navMeshAgent.SetDestination(destination);
+        //TODO:進行方向を向く
+
     }
 
 
@@ -115,12 +117,12 @@ public class Evacuee : MonoBehaviour {
                 isFollowingDrone = true;
                 FollowTarget = hitCollider.gameObject;
                 followedDrone = hitCollider.gameObject;
+                HidePath();
                 SendAddSignalForDrone(followedDrone);
                 return;
             }
         }
-        //Debug用に探索範囲を表示
-        Debug.DrawLine(transform.position, transform.position + new Vector3(SearchRadius, 0, 0), Color.green);
+        
         isFollowingDrone = false;
         FollowTarget = null;
         if(followedDrone != null) {
@@ -179,5 +181,9 @@ public class Evacuee : MonoBehaviour {
         for (int i = 1; i < navMeshAgent.path.corners.Length; i++) {
             lineRenderer.SetPosition(i, navMeshAgent.path.corners[i]);
         }
+    }
+
+    private void HidePath() {
+        lineRenderer.positionCount = 0;
     }
 }

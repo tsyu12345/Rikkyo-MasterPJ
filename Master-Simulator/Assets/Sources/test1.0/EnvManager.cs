@@ -34,7 +34,7 @@ public class EnvManager : MonoBehaviour {
     public GameObject Evacuee;
     public GameObject TowerSpawn;
     public GameObject EvacueesSpawn;
-    public GameObject Agent;
+    public List<GameObject> Drones;
     public List<GameObject> Evacuees;
     public List<GameObject> Towers;
     public GameObject floor;
@@ -42,6 +42,8 @@ public class EnvManager : MonoBehaviour {
     [Header("UI Elements")]
     public TextMeshProUGUI stepCounter;
     public TextMeshProUGUI evacRateCounter;
+
+    public int AgentGuidedCount = 0;
 
     public Utils Util;
 
@@ -56,12 +58,8 @@ public class EnvManager : MonoBehaviour {
     private delegate void SpawnCallback(GameObject obj);
 
     void Start() {
-        if(MinTowerCount < 0) {
-            Debug.LogWarning(LogPrefix + "MinTowerCount must larger than 0");
-        }
         Agents = new SimpleMultiAgentGroup();
         Util = GetComponent<Utils>();
-        RegisterAgents(Tags.Agent);
         init();
 
         OnEvacueeAll += () => {
@@ -94,12 +92,20 @@ public class EnvManager : MonoBehaviour {
     public void init() {
         RemoveObjectAll(Tags.Tower);
         RemoveObjectAll(Tags.Evacuee);
+        foreach(var drone in Drones) {
+           UnregisterAgent(drone);
+        }
         Towers.Clear();
         Evacuees.Clear();
 
         m_ResetTimer = 0;
+        AgentGuidedCount = 0;
         Evacuees = new List<GameObject>();
         Towers = new List<GameObject>();
+        RegisterAgents(Tags.Agent);
+        foreach(var drone in Drones) {
+            drone.SetActive(true);
+        }
         
         int countTowers = UnityEngine.Random.Range(MinTowerCount, MaxTowerCount);
         for(int i = 0; i < countTowers; i++) {
@@ -123,9 +129,15 @@ public class EnvManager : MonoBehaviour {
         }
     }
 
+    public void UnregisterAgent(GameObject drone) {
+        Agent agent = drone.GetComponent<Agent>();
+        Agents.UnregisterAgent(agent);
+    }
+
 
     private void RegisterAgents(string agentTag) {
         GameObject[] agents = GameObject.FindGameObjectsWithTag(Tags.Agent);
+        
         foreach (GameObject agent in agents) {
             Agents.RegisterAgent(agent.GetComponent<Agent>());
         }
@@ -199,7 +211,8 @@ public class EnvManager : MonoBehaviour {
         EvacuationRate = CalcEvacuationRate();
         // かかったステップ数を引き、制限時間に達した場合は報酬が０になるように設定
         float timeRate = m_ResetTimer / (float)MaxEnvironmentSteps;
-        Agents.AddGroupReward(EvacuationRate - timeRate);
+        Agents.SetGroupReward(EvacuationRate - timeRate);
+        Agents.AddGroupReward(AgentGuidedCount);
     }
 
 

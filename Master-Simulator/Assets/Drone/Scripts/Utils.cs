@@ -37,7 +37,6 @@ public class Utils : MonoBehaviour {
     /// 
     public List<GameObject> GetGameObjectsFromTagOnLocal(GameObject parent, string tag) {
         Transform[] childrens = parent.GetComponentsInChildren<Transform>();
-        Debug.Log("GetGameObjectsFromTagOnLocal: " + childrens.Length);
         List<GameObject> result = new List<GameObject>();
         foreach (Transform child in childrens) {
             if (child.CompareTag(tag)) {

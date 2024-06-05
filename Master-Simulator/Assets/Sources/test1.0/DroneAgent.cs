@@ -24,10 +24,12 @@ public class DroneAgent : Agent {
     void Start() {
         _controller = GetComponent<DroneController>();
         _env = GetComponentInParent<EnvManager>();
+        _env.Drones.Add(gameObject);
         _controller.RegisterTeam(gameObject.tag);
         _controller.onCrash += OnCrash;
         // 初期位置を保存
         StartPos = transform.localPosition;
+        
     }
 
     public override void Initialize() {
@@ -70,7 +72,6 @@ public class DroneAgent : Agent {
         sensor.AddObservation(guidedEvacuees.Count);
         //全避難者の座標を観測情報に追加
         List<GameObject> evacuees = _env.Util.GetGameObjectsFromTagOnLocal(_env.gameObject, Tags.Evacuee);
-        Debug.Log(LogPrefix + "Recognizing Evacuees: " + evacuees.Count);
         for(int i = 0; i < _env.MaxEvacueeCount; i++) {
             if(i < evacuees.Count) {
                 sensor.AddObservation(evacuees[i].transform.localPosition);
@@ -88,13 +89,15 @@ public class DroneAgent : Agent {
     /// <param name="actions"></param>
     public override void OnActionReceived(ActionBuffers actions) {
         _controller.FlyingCtrl(actions);
-        // 現在誘導中の避難者の数を取得し、報酬を設定
-        SetReward(guidedEvacuees.Count * 0.1f);
+        // 現在誘導中の避難者の数を取得し、報酬を設定（最大１になるように）
+        SetReward(((float)guidedEvacuees.Count / _env.Evacuees.Count));
         //誘導中の避難者が避難できた（active == false）の場合、報酬を設定
         var evacuees = new List<GameObject>(guidedEvacuees); // ループ中にリストが変更されるのを防ぐため、新しいリストを作成
-        foreach(GameObject evacuee in evacuees) {
-            if(evacuee.activeSelf == false) {
-                AddReward(0.5f);
+        foreach(GameObject evacueeObj in evacuees) {
+            Evacuee evacuee = evacueeObj.GetComponent<Evacuee>();
+            if(evacuee.isEvacuate) {
+                AddReward(1f);
+                _env.AgentGuidedCount++;
             }
         }
     }
@@ -128,7 +131,9 @@ public class DroneAgent : Agent {
         Debug.Log(LogPrefix + "Crash");
         //SetReward(-1.0f);
         SetReward(-1f);
-        EndEpisode();
+        //エージェントグループからの登録を削除
+        _env.UnregisterAgent(this.gameObject);
+        gameObject.SetActive(false);
     }
 
     private void Reset() {
