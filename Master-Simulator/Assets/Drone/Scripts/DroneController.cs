@@ -4,7 +4,7 @@ using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
-
+using Constants;
 /// <summary>
 /// ドローン共通コンポーネント
 /// </summary>
@@ -39,7 +39,7 @@ public class DroneController : MonoBehaviour {
 
     void Start() {
         Rbody = GetComponent<Rigidbody>();
-        communicateArea.transform.localScale = new Vector3(communicationRange, communicationRange, communicationRange);
+        //communicateArea.transform.localScale = new Vector3(communicationRange, communicationRange, communicationRange);
         StartCoroutine(BatteryDrainCoroutine());
     }
 
@@ -66,45 +66,45 @@ public class DroneController : MonoBehaviour {
 
     public void InHeuristicCtrl(in ActionBuffers actionsOut) {
         var action = actionsOut.ContinuousActions;
-        //WASD定義 TODO:Enumにでもまとめること
+        
         if(Input.GetKey(KeyCode.W)) {
             //前進
-            action[1] = 1f;
+            action[(int)DroneCtrlIndex.Vertical] = 1f;
         } else if (Input.GetKey(KeyCode.S)) {
             //後退
-            action[1] = -1f;
+            action[(int)DroneCtrlIndex.Vertical] = -1f;
         }
 
         if (Input.GetKey(KeyCode.A)) {
             //左移動
-            action[0] = -1f;
+            action[(int)DroneCtrlIndex.Horizontal] = -1f;
         } else if (Input.GetKey(KeyCode.D)) {
             //右移動
-            action[0] = 1f;
+            action[(int)DroneCtrlIndex.Horizontal] = 1f;
         } 
 
         if (Input.GetKey(KeyCode.LeftArrow)) {
             //左回転
-            action[2] = -1f;
+            action[(int)DroneCtrlIndex.Rotation] = -1f;
         } else if (Input.GetKey(KeyCode.RightArrow)) {
             //右回転
-            action[2] = 1f;
+            action[(int)DroneCtrlIndex.Rotation] = 1f;
         }
         
         if (Input.GetKey(KeyCode.Space)) {
             //上昇
-            action[3] = 1f;
+            action[(int)DroneCtrlIndex.Altitude] = 1f;
         } else if (Input.GetKey(KeyCode.LeftShift)) {
             //下降
-            action[3] = -1f;
+            action[(int)DroneCtrlIndex.Altitude] = -1f;
         }
     }
    
     public void FlyingCtrl(ActionBuffers actions) {
-        float horInput = actions.ContinuousActions[0]; //水平方向の入力(左右)
-        float verInput = actions.ContinuousActions[1]; //垂直方向の入力（前後）
-        float rotInput = actions.ContinuousActions[2]; //回転方向の入力
-        float altInput = actions.ContinuousActions[3]; //高度方向の入力(上下)
+        float horInput = actions.ContinuousActions[(int)DroneCtrlIndex.Horizontal]; //水平方向の入力(左右)
+        float verInput = actions.ContinuousActions[(int)DroneCtrlIndex.Vertical]; //垂直方向の入力（前後）
+        float rotInput = actions.ContinuousActions[(int)DroneCtrlIndex.Rotation]; //回転方向の入力
+        //float altInput = actions.ContinuousActions[(int)DroneCtrlIndex.Altitude]; //高度方向の入力(上下)
 
         if (batteryLevel <= 0) {
             return;
@@ -127,11 +127,13 @@ public class DroneController : MonoBehaviour {
             Ccw(Mathf.Abs(rotInput));
         }
         //高度方向の移動
+        /*
         if(altInput > 0) {
             Up(altInput);
         } else if (altInput < 0) {
             Down(Mathf.Abs(altInput));
         }
+        */
 
 
     }
