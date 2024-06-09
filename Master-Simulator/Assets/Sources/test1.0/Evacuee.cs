@@ -83,6 +83,9 @@ public class Evacuee : MonoBehaviour {
             isEvacuate = true;
             //避難処理が完了した場合、自身を非アクティブ化
             if(isFollowingDrone && followedDrone != null) {
+                //誘導されていたドローンエージェントのカウントを更新
+                var agent = followedDrone.GetComponent<DroneAgent>();
+                agent.guidedCount += 1;
                 SendRemoveSignalForDrone(followedDrone);
             }
             gameObject.SetActive(false);

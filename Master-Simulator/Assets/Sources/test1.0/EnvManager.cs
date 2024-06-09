@@ -42,6 +42,7 @@ public class EnvManager : MonoBehaviour {
     [Header("UI Elements")]
     public TextMeshProUGUI stepCounter;
     public TextMeshProUGUI evacRateCounter;
+    public TextMeshProUGUI remainAgentsCounter;
 
     public int AgentGuidedCount = 0;
 
@@ -79,7 +80,9 @@ public class EnvManager : MonoBehaviour {
         if (isEvacueeAll()) {
             OnEvacueeAll?.Invoke();
         }
-        if (m_ResetTimer >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0) {
+        //残存するステップ数が制限時間に達した場合 or エージェントが全滅した場合、エピソードを終了
+        var remainAgents = Agents.GetRegisteredAgents();
+        if ((m_ResetTimer >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0) || remainAgents.Count < 1) {
             OnEndEpisode?.Invoke(EvacuationRate);
         }
         EvacuationRate = CalcEvacuationRate();
@@ -194,6 +197,9 @@ public class EnvManager : MonoBehaviour {
             int currentRate = (int)(EvacuationRate * 100);
             evacRateCounter.text = $"Rate : {currentRate}%";
         }
+        if (remainAgentsCounter != null) {
+            remainAgentsCounter.text = $"Remain Agents : {Agents.GetRegisteredAgents().Count}";
+        }
     }
 
     private float CalcEvacuationRate() {
@@ -211,8 +217,8 @@ public class EnvManager : MonoBehaviour {
         EvacuationRate = CalcEvacuationRate();
         // かかったステップ数を引き、制限時間に達した場合は報酬が０になるように設定
         float timeRate = m_ResetTimer / (float)MaxEnvironmentSteps;
-        Agents.SetGroupReward(EvacuationRate - timeRate);
-        Agents.AddGroupReward(AgentGuidedCount);
+        Agents.SetGroupReward(EvacuationRate);
+        Agents.AddGroupReward(-timeRate);
     }
 
 

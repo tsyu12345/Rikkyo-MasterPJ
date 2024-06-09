@@ -36,7 +36,6 @@ public class Tower : MonoBehaviour{
     }
 
     void OnTriggerEnter(Collider other) {
-        Debug.Log(LogPrefix + "OnTriggerEnter: " + other.tag);
         if (other.CompareTag(Tags.Evacuee)) {
             Evacuee evacuee = other.GetComponent<Evacuee>();
             evacuee.Evacuation(this.gameObject);
