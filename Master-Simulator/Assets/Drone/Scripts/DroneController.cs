@@ -98,14 +98,23 @@ public class DroneController : MonoBehaviour {
             //下降
             action[(int)DroneCtrlIndex.Altitude] = -1f;
         }
+
+        //スロットルの調整
+        if (Input.GetKey(KeyCode.UpArrow)) {
+            action[(int)DroneCtrlIndex.Speed] += 1f;
+        } else if (Input.GetKey(KeyCode.DownArrow)) {
+            action[(int)DroneCtrlIndex.Speed] += -1f;
+        }
     }
    
     public void FlyingCtrl(ActionBuffers actions) {
         float horInput = actions.ContinuousActions[(int)DroneCtrlIndex.Horizontal]; //水平方向の入力(左右)
         float verInput = actions.ContinuousActions[(int)DroneCtrlIndex.Vertical]; //垂直方向の入力（前後）
         float rotInput = actions.ContinuousActions[(int)DroneCtrlIndex.Rotation]; //回転方向の入力
+        float speedInput = actions.ContinuousActions[(int)DroneCtrlIndex.Speed]; //速度の入力
         //float altInput = actions.ContinuousActions[(int)DroneCtrlIndex.Altitude]; //高度方向の入力(上下)
-
+        moveSpeed = speedInput * 10f; //速度の入力値を10倍して移動速度に設定
+        
         if (batteryLevel <= 0) {
             return;
         }
@@ -182,13 +191,15 @@ public class DroneController : MonoBehaviour {
     private static Vector3 RenewPosLerp(Vector3 currentPos, Vector3 targetPos, float speed) {
         return Vector3.Lerp(currentPos, targetPos, speed * Time.deltaTime);
     }
+
+
     /// <summary>
     /// 機体を上昇させる
     /// </summary>
     /// <param name="value">どのくらいの座標上昇させるか</param>
     private void Up(float value) {
-        Vector3 newPos = new Vector3(transform.localPosition.x, transform.localPosition.y + value, transform.localPosition.z);
-        transform.localPosition = RenewPosLerp(transform.localPosition, newPos, moveSpeed);
+        Vector3 force = Vector3.up * value * moveSpeed;
+        Rbody.AddForce(force);
     }
 
     /// <summary>
@@ -196,63 +207,62 @@ public class DroneController : MonoBehaviour {
     /// </summary>
     /// <param name="value">どのくらいの座標下降させるか</param>
     private void Down(float value) {
-        Vector3 newPos = new Vector3(transform.localPosition.x, transform.localPosition.y - value, transform.localPosition.z);
-        transform.localPosition = RenewPosLerp(transform.localPosition, newPos, moveSpeed);
+        Vector3 force = Vector3.down * value * moveSpeed;
+        Rbody.AddForce(force);
     }
 
     /// <summary>
-    /// Moves the aircraft forward based on its current orientation.
+    /// 前方に移動させる
     /// </summary>
-    /// <param name="value">How much to move the aircraft forward.</param>
-    private void Forward(float value) {
-        Vector3 newPos = transform.position + transform.forward * value;
-        transform.position = RenewPosLerp(transform.position, newPos, moveSpeed);
+    /// <param name="value">どのくらいの座標前進させるか</param>
+    private void Forward(float value)
+    {
+        Vector3 force = transform.forward * value * moveSpeed;
+        Rbody.AddForce(force);
     }
 
     /// <summary>
-    /// Moves the aircraft backward based on its current orientation.
+    /// 後方に移動させる
     /// </summary>
-    /// <param name="value">How much to move the aircraft backward.</param>
+    /// <param name="value">どのくらいの座標後退させるか</param>
     private void Back(float value) {
-        Vector3 newPos = transform.position - transform.forward * value;
-        transform.position = RenewPosLerp(transform.position, newPos, moveSpeed);
+        Vector3 force = -transform.forward * value * moveSpeed;
+        Rbody.AddForce(force);
     }
 
     /// <summary>
-    /// Moves the aircraft to the left based on its current orientation.
+    /// 左に移動させる
     /// </summary>
-    /// <param name="value">How much to move the aircraft to the left.</param>
+    /// <param name="value">どのくらいの座標左移動させるか</param>
     private void Left(float value) {
-        Vector3 newPos = transform.position - transform.right * value;
-        transform.position = RenewPosLerp(transform.position, newPos, moveSpeed);
+        Vector3 force = -transform.right * value * moveSpeed;
+        Rbody.AddForce(force);
     }
 
     /// <summary>
-    /// Moves the aircraft to the right based on its current orientation.
+    /// 右に移動させる
     /// </summary>
-    /// <param name="value">How much to move the aircraft to the right.</param>
+    /// <param name="value">どのくらいの座標右移動させるか</param>
     private void Right(float value) {
-        Vector3 newPos = transform.position + transform.right * value;
-        transform.position = RenewPosLerp(transform.position, newPos, moveSpeed);
+        Vector3 force = transform.right * value * moveSpeed;
+        Rbody.AddForce(force);
     }
-
 
     /// <summary>
     /// 時計回りに旋回
     /// </summary>
-    /// <param name="value">How much to rotate the aircraft clockwise.</param>
+    /// <param name="value">時計回りにどのくらい旋回させるか</param>
     private void Cw(float value) {
-        transform.Rotate(Vector3.up * rotSpeed * Time.deltaTime);
+        Vector3 torque = Vector3.up * value * moveSpeed * Time.deltaTime;
+        Rbody.AddTorque(torque);
     }
 
     /// <summary>
     /// 反時計回りに機体を回転させる
     /// </summary>
-    /// <param name="value">How much to rotate the aircraft counterclockwise.</param>
+    /// <param name="value">反時計回りにどのくらい旋回させるか</param>
     private void Ccw(float value) {
-        transform.Rotate(Vector3.down * rotSpeed * Time.deltaTime);
+        Vector3 torque = Vector3.down * value * moveSpeed * Time.deltaTime;
+        Rbody.AddTorque(torque);
     }
-
-
-
 }

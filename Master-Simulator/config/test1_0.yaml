@@ -2,17 +2,17 @@ behaviors:
   DroneAgent:
     trainer_type: poca
     hyperparameters:
-      batch_size: 2500
+      batch_size: 2700
       buffer_size: 10240
-      learning_rate: 0.0003
-      beta: 1e-4
+      learning_rate: 0.0005
+      beta: 1e-3
       epsilon: 0.4
       lambd: 0.95
       num_epoch: 3
       learning_rate_schedule: linear
     network_settings:
       normalize: false
-      hidden_units: 512
+      hidden_units: 640
       num_layers: 3
     reward_signals:
       extrinsic:
