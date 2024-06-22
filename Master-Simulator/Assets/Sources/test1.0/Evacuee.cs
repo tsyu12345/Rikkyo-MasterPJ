@@ -83,6 +83,9 @@ public class Evacuee : MonoBehaviour {
             isEvacuate = true;
             //避難処理が完了した場合、自身を非アクティブ化
             if(isFollowingDrone && followedDrone != null) {
+                //誘導されていたドローンエージェントのカウントを更新
+                var agent = followedDrone.GetComponent<DroneAgent>();
+                agent.guidedCount += 1;
                 SendRemoveSignalForDrone(followedDrone);
             }
             gameObject.SetActive(false);
@@ -116,6 +119,10 @@ public class Evacuee : MonoBehaviour {
             if (hitCollider.CompareTag(Tags.Agent)) {
                 isFollowingDrone = true;
                 FollowTarget = hitCollider.gameObject;
+                if(followedDrone != null) { //前に追跡していたドローンがいた場合、リストから削除
+                    SendRemoveSignalForDrone(followedDrone);
+                }
+                // 直前の追跡ドローンを更新
                 followedDrone = hitCollider.gameObject;
                 HidePath();
                 SendAddSignalForDrone(followedDrone);
@@ -155,17 +162,17 @@ public class Evacuee : MonoBehaviour {
     private void SendAddSignalForDrone(GameObject drone) {
         DroneAgent agent = drone.GetComponent<DroneAgent>();
         // 既に誘導中の場合は無視(リストに含まれている場合は無視)
-        if(agent.guidedEvacuees.Contains(gameObject)) {
+        if(agent.currentGuidedEvacuees.Contains(gameObject)) {
             return;
         }
-        agent.guidedEvacuees.Add(gameObject);
+        agent.currentGuidedEvacuees.Add(gameObject);
     }
 
 
     private void SendRemoveSignalForDrone(GameObject drone) {
         DroneAgent agent = drone.GetComponent<DroneAgent>();
-        if(agent.guidedEvacuees.Contains(gameObject)) {
-            agent.guidedEvacuees.Remove(gameObject);
+        if(agent.currentGuidedEvacuees.Contains(gameObject)) {
+            agent.currentGuidedEvacuees.Remove(gameObject);
         }
     }
 

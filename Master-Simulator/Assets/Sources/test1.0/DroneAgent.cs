@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
@@ -12,7 +13,12 @@ using Constants;
 /// </summary>
 public class DroneAgent : Agent {
 
-    public List<GameObject> guidedEvacuees = new List<GameObject>();
+    public List<GameObject> currentGuidedEvacuees = new List<GameObject>();
+    public int guidedCount = 0;
+
+    [Header("UI Elements")]
+    private TextMeshPro currentGuidingCount;
+    private TextMeshPro currentGoalCount;
     private DroneController _controller;
     private EnvManager _env;
 
@@ -20,16 +26,23 @@ public class DroneAgent : Agent {
 
     private string LogPrefix = "DroneAgent: ";
 
-
     void Start() {
         _controller = GetComponent<DroneController>();
         _env = GetComponentInParent<EnvManager>();
         _env.Drones.Add(gameObject);
         _controller.RegisterTeam(gameObject.tag);
         _controller.onCrash += OnCrash;
+        _env.OnEndEpisode += OnEndEpisodeHandler;
         // 初期位置を保存
         StartPos = transform.localPosition;
-        
+
+        currentGuidingCount = transform.Find("GuidingCounter").GetComponent<TextMeshPro>();
+        currentGoalCount = transform.Find("GuidedCounter").GetComponent<TextMeshPro>();
+    }
+
+    void Update() {
+        currentGuidingCount.text = currentGuidedEvacuees.Count.ToString();
+        currentGoalCount.text = guidedCount.ToString();
     }
 
     public override void Initialize() {
@@ -69,7 +82,7 @@ public class DroneAgent : Agent {
             }
         }
         //現在誘導している避難者の数を観測情報に追加
-        sensor.AddObservation(guidedEvacuees.Count);
+        sensor.AddObservation(currentGuidedEvacuees.Count);
         //全避難者の座標を観測情報に追加
         List<GameObject> evacuees = _env.Util.GetGameObjectsFromTagOnLocal(_env.gameObject, Tags.Evacuee);
         for(int i = 0; i < _env.MaxEvacueeCount; i++) {
@@ -90,16 +103,7 @@ public class DroneAgent : Agent {
     public override void OnActionReceived(ActionBuffers actions) {
         _controller.FlyingCtrl(actions);
         // 現在誘導中の避難者の数を取得し、報酬を設定（最大１になるように）
-        SetReward(((float)guidedEvacuees.Count / _env.Evacuees.Count));
-        //誘導中の避難者が避難できた（active == false）の場合、報酬を設定
-        var evacuees = new List<GameObject>(guidedEvacuees); // ループ中にリストが変更されるのを防ぐため、新しいリストを作成
-        foreach(GameObject evacueeObj in evacuees) {
-            Evacuee evacuee = evacueeObj.GetComponent<Evacuee>();
-            if(evacuee.isEvacuate) {
-                AddReward(1f);
-                _env.AgentGuidedCount++;
-            }
-        }
+        SetReward(((float)currentGuidedEvacuees.Count / _env.Evacuees.Count));
     }
 
     public override void Heuristic(in ActionBuffers actionsOut) {
@@ -136,16 +140,28 @@ public class DroneAgent : Agent {
         gameObject.SetActive(false);
     }
 
+    /** Env Event Handlers */
+    
+    private void OnEndEpisodeHandler(float evacueeRate) {
+        //誘導した避難者の割合に応じて報酬を設定
+        if(guidedCount > 0) {
+            AddReward(guidedCount);
+        } else {
+            AddReward(-1f);
+        }
+    }
+
     private void Reset() {
-        transform.localPosition = StartPos;
-        //transform.localRotation = Quaternion.Euler(0, 0, 0);
         //とりあえず、0地点にリセット
         transform.localRotation = Quaternion.Euler(0, 0, 0);
-        _controller.batteryLevel = 100;
+        transform.localPosition = StartPos;
+        //Rbodyのパラメータをリセット
         _controller.Rbody.velocity = Vector3.zero;
         _controller.Rbody.useGravity = false;
-        //X,Z回転を固定
         _controller.Rbody.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-        guidedEvacuees = new List<GameObject>();
+        _controller.moveSpeed = 0;
+        _controller.batteryLevel = 100;
+        currentGuidedEvacuees = new List<GameObject>();
+        guidedCount = 0;
     }
 }
