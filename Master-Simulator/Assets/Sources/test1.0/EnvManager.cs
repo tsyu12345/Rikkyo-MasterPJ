@@ -160,9 +160,11 @@ public class EnvManager : MonoBehaviour {
     }
 
     private void RemoveObjectAll(string tag) {
-        GameObject[] objects = GameObject.FindGameObjectsWithTag(tag);
+        GameObject[] objects = FindObjectsOfType<GameObject>(true);
         foreach (GameObject obj in objects) {
-            Destroy(obj);
+            if (obj.CompareTag(tag)) {
+                Destroy(obj);
+            }
         }
     }
 
