@@ -4,12 +4,16 @@ using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
+using Unity.AI;
 using Constants;
 /// <summary>
 /// ドローン共通コンポーネント
 /// </summary>
 public class DroneController : MonoBehaviour {
-
+    [Header("Controller Mode")]
+    public ControlModel CtrlModel = ControlModel.NavMesh;
+    public UnityEngine.AI.NavMeshAgent NavAgent;
+    public Vector3 Destination;
     [Header("Movement Parameters")]
     public float moveSpeed = 10f; // 移動速度
     public float rotSpeed = 100f; // 回転速度
@@ -39,6 +43,10 @@ public class DroneController : MonoBehaviour {
 
     void Start() {
         Rbody = GetComponent<Rigidbody>();
+        if(CtrlModel == ControlModel.NavMesh) {
+            NavAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+            NavAgent.autoBraking = false;
+        }
         //communicateArea.transform.localScale = new Vector3(communicationRange, communicationRange, communicationRange);
         StartCoroutine(BatteryDrainCoroutine());
     }
@@ -65,6 +73,100 @@ public class DroneController : MonoBehaviour {
     }
 
     public void InHeuristicCtrl(in ActionBuffers actionsOut) {
+        if(CtrlModel == ControlModel.Physics) {
+            InPhysicsCtrl(actionsOut);
+        } else if(CtrlModel == ControlModel.NavMesh) {
+            InNavMeshCtrl(actionsOut);
+        }
+    }
+   
+   /// <summary>
+   /// （物理コントロール専用）ドローンの移動制御関数
+   /// </summary>
+   /// <param name="actions"></param>
+    public void FlyingCtrl(ActionBuffers actions) {
+        float horInput = actions.ContinuousActions[(int)DroneCtrlIndex.Horizontal]; //水平方向の入力(左右)
+        float verInput = actions.ContinuousActions[(int)DroneCtrlIndex.Vertical]; //垂直方向の入力（前後）
+        float rotInput = actions.ContinuousActions[(int)DroneCtrlIndex.Rotation]; //回転方向の入力
+        float speedInput = actions.ContinuousActions[(int)DroneCtrlIndex.Speed]; //速度の入力
+        //float altInput = actions.ContinuousActions[(int)DroneCtrlIndex.Altitude]; //高度方向の入力(上下)
+        moveSpeed = speedInput * 10f; //速度の入力値を10倍して移動速度に設定
+        
+        if (batteryLevel <= 0) {
+            return;
+        }
+        
+        if(horInput > 0) {
+            Right(horInput);
+        } else {
+            Left(Mathf.Abs(horInput));
+        }
+        if(verInput > 0) {
+            Forward(verInput);
+        } else {
+            Back(Mathf.Abs(verInput));
+        }
+        //回転
+        if(rotInput > 0) {
+            Cw(rotInput);
+        } else if (rotInput < 0) {
+            Ccw(Mathf.Abs(rotInput));
+        }
+        //高度方向の移動
+        /*
+        if(altInput > 0) {
+            Up(altInput);
+        } else if (altInput < 0) {
+            Down(Mathf.Abs(altInput));
+        }
+        */
+
+
+    }
+
+
+    /// <summary>
+    /// ナビメッシュエージェント版 機体制御関数
+    /// 速度と高度を制御する。
+    /// 目的地はAgentクラス側で定義
+    /// </summary>
+    /// <param name="actions"></param>
+    public void NavigationCtrl(ActionBuffers actions) {
+        float speedInput = actions.ContinuousActions[(int)NavAgentCtrlIndex.Speed]; //速度の入力
+        float altInput = actions.ContinuousActions[(int)NavAgentCtrlIndex.Altitude]; // 高度の入力
+
+        NavAgent.speed = speedInput * moveSpeed;
+        float newHeight = altInput * NavAgent.speed;
+        float distance = Mathf.Abs(newHeight - NavAgent.baseOffset);
+        float duration = distance / NavAgent.speed;
+        NavAgent.angularSpeed = speedInput * moveSpeed;
+        StartCoroutine(NavChangeHeight(newHeight, duration));
+    }
+    /// <summary>
+    /// 他のドローンにメッセージを送信する。
+    /// </summary>
+    public bool Communicate(Types.MessageData messageData, GameObject target) {
+        var result = false;
+        //一旦距離制限は考えない
+        target.GetComponent<DroneController>().ReceiveMessage(messageData);
+        result = true;
+        return result;
+    }
+
+    /// <summary>
+    /// 他のドローンからメッセージを受信する（させる）。
+    /// </summary>
+    public void ReceiveMessage(Types.MessageData Data) {
+        onReceiveMsg?.Invoke(Data);
+    }
+
+    private void InNavMeshCtrl(in ActionBuffers actionsOut) {
+        var action = actionsOut.DiscreteActions;
+        // TODO: Implement
+
+
+    }
+    private void InPhysicsCtrl(in ActionBuffers actionsOut) {
         var action = actionsOut.ContinuousActions;
         
         if(Input.GetKey(KeyCode.W)) {
@@ -106,66 +208,19 @@ public class DroneController : MonoBehaviour {
             action[(int)DroneCtrlIndex.Speed] += -1f;
         }
     }
-   
-    public void FlyingCtrl(ActionBuffers actions) {
-        float horInput = actions.ContinuousActions[(int)DroneCtrlIndex.Horizontal]; //水平方向の入力(左右)
-        float verInput = actions.ContinuousActions[(int)DroneCtrlIndex.Vertical]; //垂直方向の入力（前後）
-        float rotInput = actions.ContinuousActions[(int)DroneCtrlIndex.Rotation]; //回転方向の入力
-        float speedInput = actions.ContinuousActions[(int)DroneCtrlIndex.Speed]; //速度の入力
-        //float altInput = actions.ContinuousActions[(int)DroneCtrlIndex.Altitude]; //高度方向の入力(上下)
-        moveSpeed = speedInput * 10f; //速度の入力値を10倍して移動速度に設定
-        
-        if (batteryLevel <= 0) {
-            return;
-        }
-        
-        if(horInput > 0) {
-            Right(horInput);
-        } else {
-            Left(Mathf.Abs(horInput));
-        }
-        if(verInput > 0) {
-            Forward(verInput);
-        } else {
-            Back(Mathf.Abs(verInput));
-        }
-        //回転
-        if(rotInput > 0) {
-            Cw(rotInput);
-        } else if (rotInput < 0) {
-            Ccw(Mathf.Abs(rotInput));
-        }
-        //高度方向の移動
-        /*
-        if(altInput > 0) {
-            Up(altInput);
-        } else if (altInput < 0) {
-            Down(Mathf.Abs(altInput));
-        }
-        */
 
+    private IEnumerator NavChangeHeight(float newHeight, float duration) {
+        float startHeight = NavAgent.baseOffset;
+        float elapsedTime = 0f;
 
+        while (elapsedTime < duration) {
+            elapsedTime += Time.deltaTime;
+            NavAgent.baseOffset = Mathf.Lerp(startHeight, newHeight, elapsedTime / duration);
+            yield return null;
+        }
+
+        NavAgent.baseOffset = newHeight;
     }
-
-    /// <summary>
-    /// 他のドローンにメッセージを送信する。
-    /// </summary>
-    public bool Communicate(Types.MessageData messageData, GameObject target) {
-        var result = false;
-        //一旦距離制限は考えない
-        target.GetComponent<DroneController>().ReceiveMessage(messageData);
-        result = true;
-        return result;
-    }
-
-    /// <summary>
-    /// 他のドローンからメッセージを受信する（させる）。
-    /// </summary>
-    public void ReceiveMessage(Types.MessageData Data) {
-        onReceiveMsg?.Invoke(Data);
-    }
-
-
     private void FreeFall() {
         Rbody.useGravity = true;
         //FreezePosition,FreezeRotationを解除
