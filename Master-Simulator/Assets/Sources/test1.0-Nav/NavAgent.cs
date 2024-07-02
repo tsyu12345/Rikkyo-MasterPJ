@@ -29,6 +29,8 @@ public class DroneNavAgent : Agent {
     public delegate void OnAddEvacuee();
     public OnAddEvacuee onAddEvacuee;
 
+    private LineRenderer lineRenderer;
+
     void Start() {
         _controller = GetComponent<DroneController>();
         _env = GetComponentInParent<EnvManager>();
@@ -36,6 +38,13 @@ public class DroneNavAgent : Agent {
         _controller.RegisterTeam(gameObject.tag);
         _controller.onCrash += OnCrash;
         _env.OnEndEpisode += OnEndEpisodeHandler;
+
+        lineRenderer = GetComponent<LineRenderer>();
+        lineRenderer.startWidth = 0.1f;
+        lineRenderer.endWidth = 0.1f;
+        lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        lineRenderer.positionCount = 0;
+
         // 初期位置を保存
         StartPos = transform.localPosition;
 
@@ -117,11 +126,13 @@ public class DroneNavAgent : Agent {
 
         if(isWaitingMode) {
             _controller.NavAgent.SetDestination(transform.position);
+            lineRenderer.positionCount = 0;
         } else if(isSearchMode) {
             SearchFlying(actions);
         } else  {
             Vector3 targetPos = _env.Towers[destination - 2].transform.position;
             _controller.NavAgent.SetDestination(targetPos);
+            lineRenderer.positionCount = 0;
         }
     }
 
@@ -173,6 +184,12 @@ public class DroneNavAgent : Agent {
         NavMeshHit hit;
         if (NavMesh.SamplePosition(destination, out hit, patrolRadius, UnityEngine.AI.NavMesh.AllAreas)) {
             _controller.NavAgent.SetDestination(hit.position);
+            // Debug用にパスを描画
+            lineRenderer.positionCount = _controller.NavAgent.path.corners.Length;
+            lineRenderer.SetPosition(0, transform.position);
+            for (int i = 1; i < _controller.NavAgent.path.corners.Length; i++) {
+                lineRenderer.SetPosition(i, _controller.NavAgent.path.corners[i]);
+            }
             AddReward(0.1f);
 
         } else {
