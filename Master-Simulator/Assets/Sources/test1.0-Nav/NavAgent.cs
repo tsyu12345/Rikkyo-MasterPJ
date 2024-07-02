@@ -118,7 +118,7 @@ public class NavAgentController : Agent {
     }
 
     public override void Heuristic(in ActionBuffers actionsOut) {
-        
+        // TODO: Implement
     }
 
     /// <summary>
@@ -151,14 +151,35 @@ public class NavAgentController : Agent {
         gameObject.SetActive(false);
     }
 
-    /** Env Event Handlers */
-    
     private void OnEndEpisodeHandler(float evacueeRate) {
         //誘導した避難者の割合に応じて報酬を設定
         if(guidedCount > 0) {
             AddReward(guidedCount);
         } else {
             AddReward(-1f);
+        }
+    }
+
+    /** Env Event Handlers */
+
+    /// <summary>
+    /// 探索行動における飛行制御関数
+    /// TODO: Nav用DroneControllerクラスができたらそっちに移管する
+    /// </summary>
+    private void SearchFlying(ActionBuffers actions) {
+        float moveX = actions.ContinuousActions[NavAgentCtrlIndex.PosX];
+        float moveZ = actions.ContinuousActions[NavAgentCtrlIndex.PosZ];
+
+        Vector3 moveVector = new Vector3(moveX, 0, moveZ);
+
+        // NavMesh上の有効なポイントを計算
+        Vector3 destination = navMeshAgent.transform.position + moveVector * patrolRadius;
+
+        NavMeshHit hit;
+        if (NavMesh.SamplePosition(destination, out hit, patrolRadius, NavMesh.AllAreas)) {
+            navMeshAgent.SetDestination(hit.position);
+        } else {
+            AddReward(-0.1f);
         }
     }
 
