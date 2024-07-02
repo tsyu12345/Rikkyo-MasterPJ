@@ -4,7 +4,7 @@ using UnityEngine;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
-using Unity.AI;
+using UnityEngine.AI;
 using Constants;
 /// <summary>
 /// ドローン共通コンポーネント
@@ -12,7 +12,7 @@ using Constants;
 public class DroneController : MonoBehaviour {
     [Header("Controller Mode")]
     public ControlModel CtrlModel = ControlModel.NavMesh;
-    public UnityEngine.AI.NavMeshAgent NavAgent;
+    public NavMeshAgent NavAgent;
     public Vector3 Destination;
     [Header("Movement Parameters")]
     public float moveSpeed = 10f; // 移動速度
@@ -44,7 +44,7 @@ public class DroneController : MonoBehaviour {
     void Start() {
         Rbody = GetComponent<Rigidbody>();
         if(CtrlModel == ControlModel.NavMesh) {
-            NavAgent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+            NavAgent = GetComponent<NavMeshAgent>();
             NavAgent.autoBraking = false;
         }
         //communicateArea.transform.localScale = new Vector3(communicationRange, communicationRange, communicationRange);
@@ -133,14 +133,14 @@ public class DroneController : MonoBehaviour {
     /// <param name="actions"></param>
     public void NavigationCtrl(ActionBuffers actions) {
         float speedInput = actions.ContinuousActions[(int)NavAgentCtrlIndex.Speed]; //速度の入力
-        float altInput = actions.ContinuousActions[(int)NavAgentCtrlIndex.Altitude]; // 高度の入力
+        // float altInput = actions.ContinuousActions[(int)NavAgentCtrlIndex.Altitude]; // 高度の入力
 
         NavAgent.speed = speedInput * moveSpeed;
-        float newHeight = altInput * NavAgent.speed;
-        float distance = Mathf.Abs(newHeight - NavAgent.baseOffset);
-        float duration = distance / NavAgent.speed;
-        NavAgent.angularSpeed = speedInput * moveSpeed;
-        StartCoroutine(NavChangeHeight(newHeight, duration));
+        //NavAgent.angularSpeed = speedInput * moveSpeed;
+        //float newHeight = altInput * NavAgent.speed;
+        //float distance = Mathf.Abs(newHeight - NavAgent.baseOffset);
+        //float duration = distance / NavAgent.speed;
+        //StartCoroutine(NavChangeHeight(newHeight, duration));
     }
     /// <summary>
     /// 他のドローンにメッセージを送信する。

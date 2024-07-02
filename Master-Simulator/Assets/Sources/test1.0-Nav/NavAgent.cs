@@ -5,12 +5,14 @@ using TMPro;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
-using Unity.AI;
+using UnityEngine.AI;
 using UtilityFuncs;
 using Constants;
 
-public class NavAgentController : Agent {
+public class DroneNavAgent : Agent {
     
+    [Header("Agent Parameters")]
+    public float patrolRadius = 10f;    
     public List<GameObject> currentGuidedEvacuees = new List<GameObject>();
     public int guidedCount = 0;
 
@@ -82,17 +84,10 @@ public class NavAgentController : Agent {
         }        
         //各避難タワーからの観測情報を追加
         //観測サイズを固定しないといけないので、最大数の避難タワーを観測情報に追加(残りは空：ZeroVector, -1)
-        List<GameObject> towers = GetsTowers();
-        int currentTowerCount = towers.Count;
-        sensor.AddObservation(currentTowerCount);
-        for(int i = 0; i < _env.MaxTowerCount; i++) {
-            if(i < currentTowerCount) {
-                sensor.AddObservation(towers[i].transform.localPosition);
-                sensor.AddObservation(towers[i].GetComponent<Tower>().currentCapacity);
-            } else {
-                sensor.AddObservation(Vector3.zero);
-                sensor.AddObservation(-1);
-            }
+        foreach (var towerObj in _env.Towers) {
+            //sensor.AddObservation(tower.transform.localPosition);
+            var tower = towerObj.GetComponent<Tower>();
+            sensor.AddObservation(tower.currentCapacity);
         }
     
         //全避難者の座標を観測情報に追加
@@ -114,24 +109,24 @@ public class NavAgentController : Agent {
     /// <param name="actions"></param>
     public override void OnActionReceived(ActionBuffers actions) {
         _controller.NavigationCtrl(actions);
-        // TODO: 移動先の選定と実装
+        
+        var destination = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
+
+        var isWaitingMode = destination == 0;
+        var isSearchMode = destination == 1;
+
+        if(isWaitingMode) {
+            _controller.NavAgent.SetDestination(transform.position);
+        } else if(isSearchMode) {
+            SearchFlying(actions);
+        } else  {
+            Vector3 targetPos = _env.Towers[destination - 2].transform.position;
+            _controller.NavAgent.SetDestination(targetPos);
+        }
     }
 
     public override void Heuristic(in ActionBuffers actionsOut) {
         // TODO: Implement
-    }
-
-    /// <summary>
-    /// 避難タワー毎の座標を取得する
-    /// </summary>
-    private List<GameObject> GetsTowers() {
-        List<GameObject> towers = _env.Util.GetGameObjectsFromTagOnLocal(_env.gameObject, Tags.Tower);
-        // 何故かリストがループ中に変更されてしまうので、新しいリストに追加
-        List<GameObject> collectionTowers = new List<GameObject>(towers);
-        foreach (GameObject tower in collectionTowers) {
-            towers.Add(tower);
-        }
-        return towers;
     }
 
     /** Drone Event Handlers */
@@ -167,19 +162,22 @@ public class NavAgentController : Agent {
     /// TODO: Nav用DroneControllerクラスができたらそっちに移管する
     /// </summary>
     private void SearchFlying(ActionBuffers actions) {
-        float moveX = actions.ContinuousActions[NavAgentCtrlIndex.PosX];
-        float moveZ = actions.ContinuousActions[NavAgentCtrlIndex.PosZ];
+        float moveX = actions.ContinuousActions[(int)NavAgentCtrlIndex.PosX];
+        float moveZ = actions.ContinuousActions[(int)NavAgentCtrlIndex.PosZ];
 
         Vector3 moveVector = new Vector3(moveX, 0, moveZ);
 
         // NavMesh上の有効なポイントを計算
-        Vector3 destination = navMeshAgent.transform.position + moveVector * patrolRadius;
+        Vector3 destination = _controller.NavAgent.transform.position + moveVector * patrolRadius;
 
         NavMeshHit hit;
-        if (NavMesh.SamplePosition(destination, out hit, patrolRadius, NavMesh.AllAreas)) {
-            navMeshAgent.SetDestination(hit.position);
+        if (NavMesh.SamplePosition(destination, out hit, patrolRadius, UnityEngine.AI.NavMesh.AllAreas)) {
+            _controller.NavAgent.SetDestination(hit.position);
+            AddReward(0.1f);
+
         } else {
             AddReward(-0.1f);
+            //_controller.NavAgent.SetDestination(null);
         }
     }
 
@@ -192,8 +190,8 @@ public class NavAgentController : Agent {
         _controller.Rbody.useGravity = false;
         _controller.Rbody.angularVelocity = Vector3.zero;
         _controller.Rbody.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-        _controller.moveSpeed = 0;
         _controller.batteryLevel = 100;
+        currentGuidedEvacuees.Clear();
         currentGuidedEvacuees = new List<GameObject>();
         guidedCount = 0;
     }

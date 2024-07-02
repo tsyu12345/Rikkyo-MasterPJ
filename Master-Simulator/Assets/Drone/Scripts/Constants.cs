@@ -16,12 +16,14 @@ namespace Constants {
     /// ナビメッシュ版エージェントにおける、各種行動の格納先Index
     /// </summary>
     public enum NavAgentCtrlIndex {
+        // 連続行動系
         Speed = 0,
-        Altitude = 1,
-        Destination = 2,
+        // Altitude = 0,
         /** 探索行動時における、座標出力用 */
-        PosX  = 3,
-        PosZ = 4,
+        PosX  = 1,
+        PosZ = 2,
+        // 離散行動系
+        Destination = 0,
     }
 
     public enum DroneCtrlIndex {

@@ -84,7 +84,7 @@ public class Evacuee : MonoBehaviour {
             //避難処理が完了した場合、自身を非アクティブ化
             if(isFollowingDrone && followedDrone != null) {
                 //誘導されていたドローンエージェントのカウントを更新
-                var agent = followedDrone.GetComponent<DroneAgent>();
+                var agent = followedDrone.GetComponent<DroneNavAgent>();
                 agent.guidedCount += 1;
                 agent.AddReward(0.1f);
                 SendRemoveSignalForDrone(followedDrone);
@@ -161,7 +161,7 @@ public class Evacuee : MonoBehaviour {
 
 
     private void SendAddSignalForDrone(GameObject drone) {
-        DroneAgent agent = drone.GetComponent<DroneAgent>();
+        DroneNavAgent agent = drone.GetComponent<DroneNavAgent>();
         // 既に誘導中の場合は無視(リストに含まれている場合は無視)
         if(agent.currentGuidedEvacuees.Contains(gameObject)) {
             return;
@@ -172,7 +172,7 @@ public class Evacuee : MonoBehaviour {
 
 
     private void SendRemoveSignalForDrone(GameObject drone) {
-        DroneAgent agent = drone.GetComponent<DroneAgent>();
+        DroneNavAgent agent = drone.GetComponent<DroneNavAgent>();
         if(agent.currentGuidedEvacuees.Contains(gameObject)) {
             agent.currentGuidedEvacuees.Remove(gameObject);
         }
