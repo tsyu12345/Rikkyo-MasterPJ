@@ -21,7 +21,7 @@ public class DroneNavAgent : Agent {
     private TextMeshPro currentGoalCount;
     
     private EnvManager _env;
-    private DroneController _controller;
+    private NavController _controller;
     private Vector3 StartPos;
 
     private string LogPrefix = "DroneAgent: ";
@@ -30,9 +30,9 @@ public class DroneNavAgent : Agent {
     public OnAddEvacuee onAddEvacuee;
 
     void Start() {
-        _controller = GetComponent<DroneController>();
-        _controller.patrolRadius = patrolRadius;
-        _controller.targets = _env.Towers;
+        _controller = GetComponent<NavController>();
+        _controller.PatrolRadius = patrolRadius;
+        _controller.Targets = _env.Towers;
         _env = GetComponentInParent<EnvManager>();
         _env.Drones.Add(gameObject);
         _controller.RegisterTeam(gameObject.tag);
@@ -112,7 +112,7 @@ public class DroneNavAgent : Agent {
     /// 3. 目的地選択 - 離散値
     /// <param name="actions"></param>
     public override void OnActionReceived(ActionBuffers actions) {
-        _controller.NavigationCtrl(actions);
+        _controller.FlyingCtrl(actions);
     }
 
     public override void Heuristic(in ActionBuffers actionsOut) {

@@ -19,7 +19,7 @@ public class DroneAgent : Agent {
     [Header("UI Elements")]
     private TextMeshPro currentGuidingCount;
     private TextMeshPro currentGoalCount;
-    private DroneController _controller;
+    private PhysicsController _controller;
     private EnvManager _env;
 
     private Vector3 StartPos;
@@ -30,7 +30,7 @@ public class DroneAgent : Agent {
     public OnAddEvacuee onAddEvacuee;
 
     void Start() {
-        _controller = GetComponent<DroneController>();
+        _controller = GetComponent<PhysicsController>();
         _env = GetComponentInParent<EnvManager>();
         _env.Drones.Add(gameObject);
         _controller.RegisterTeam(gameObject.tag);
