@@ -17,6 +17,8 @@ public class DroneController : MonoBehaviour {
     [Header("Movement Parameters")]
     public float moveSpeed = 10f; // 移動速度
     public float rotSpeed = 100f; // 回転速度
+    public List<GameObject> targets = new List<GameObject>();
+    public float patrolRadius = 20f;
     [Header("Battery")]
     public float batteryLevel = 100f; // バッテリー残量の初期値
     private float batteryDrainRate = 1f; // 1秒あたりのバッテリー消費率
@@ -40,9 +42,19 @@ public class DroneController : MonoBehaviour {
     /***/
     public List<string> CommunicateTargetTags;
     private string Team;
+    private LineRenderer lineRenderer;
+
+
 
     void Start() {
         Rbody = GetComponent<Rigidbody>();
+
+        lineRenderer = GetComponent<LineRenderer>();
+        lineRenderer.startWidth = 0.1f;
+        lineRenderer.endWidth = 0.1f;
+        lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+        lineRenderer.positionCount = 0;
+
         if(CtrlModel == ControlModel.NavMesh) {
             NavAgent = GetComponent<NavMeshAgent>();
             NavAgent.autoBraking = false;
@@ -127,21 +139,58 @@ public class DroneController : MonoBehaviour {
 
     /// <summary>
     /// ナビメッシュエージェント版 機体制御関数
-    /// 速度と高度を制御する。
-    /// 目的地はAgentクラス側で定義
     /// </summary>
     /// <param name="actions"></param>
     public void NavigationCtrl(ActionBuffers actions) {
         float speedInput = actions.ContinuousActions[(int)NavAgentCtrlIndex.Speed]; //速度の入力
-        // float altInput = actions.ContinuousActions[(int)NavAgentCtrlIndex.Altitude]; // 高度の入力
-
         NavAgent.speed = speedInput * moveSpeed;
-        //NavAgent.angularSpeed = speedInput * moveSpeed;
-        //float newHeight = altInput * NavAgent.speed;
-        //float distance = Mathf.Abs(newHeight - NavAgent.baseOffset);
-        //float duration = distance / NavAgent.speed;
-        //StartCoroutine(NavChangeHeight(newHeight, duration));
+
+        var destination = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
+
+        var isWaitingMode = destination == 0;
+        var isSearchMode = destination == 1;
+
+        if(isWaitingMode) {
+            NavAgent.SetDestination(transform.position);
+            lineRenderer.positionCount = 0;
+        } else if(isSearchMode) {
+            SearchFlying(actions);
+        } else  {
+            Vector3 target = targets[destination - 2].transform.position;
+            NavAgent.SetDestination(target);
+            lineRenderer.positionCount = 0;
+        }
+        
     }
+
+
+    /// <summary>
+    /// 探索行動における飛行制御関数
+    /// TODO: Nav用DroneControllerクラスができたらそっちに移管する
+    /// </summary>
+    private void SearchFlying(ActionBuffers actions) {
+        float moveX = actions.ContinuousActions[(int)NavAgentCtrlIndex.PosX];
+        float moveZ = actions.ContinuousActions[(int)NavAgentCtrlIndex.PosZ];
+
+        Vector3 moveVector = new Vector3(moveX, 0, moveZ);
+
+        // NavMesh上の有効なポイントを計算
+        Vector3 destination = NavAgent.transform.position + moveVector * patrolRadius;
+
+        NavMeshHit hit;
+        if (NavMesh.SamplePosition(destination, out hit, patrolRadius, NavMesh.AllAreas)) {
+            NavAgent.SetDestination(hit.position);
+            // Debug用にパスを描画
+            lineRenderer.positionCount = NavAgent.path.corners.Length;
+            lineRenderer.SetPosition(0, transform.position);
+            for (int i = 1; i < NavAgent.path.corners.Length; i++) {
+                lineRenderer.SetPosition(i, NavAgent.path.corners[i]);
+            }
+        } else {
+            // Nope
+        }
+    }
+
     /// <summary>
     /// 他のドローンにメッセージを送信する。
     /// </summary>
@@ -161,8 +210,16 @@ public class DroneController : MonoBehaviour {
     }
 
     private void InNavMeshCtrl(in ActionBuffers actionsOut) {
-        var action = actionsOut.DiscreteActions;
-        // TODO: Implement
+        var action = actionsOut.ContinuousActions;
+
+        //スロットルの調整
+        if (Input.GetKey(KeyCode.UpArrow)) {
+            action[(int)NavAgentCtrlIndex.Speed] += 1f;
+        } else if (Input.GetKey(KeyCode.DownArrow)) {
+            action[(int)NavAgentCtrlIndex.Speed] += -1f;
+        }
+
+        // 
 
 
     }

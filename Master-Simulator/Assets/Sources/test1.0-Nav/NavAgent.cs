@@ -29,21 +29,16 @@ public class DroneNavAgent : Agent {
     public delegate void OnAddEvacuee();
     public OnAddEvacuee onAddEvacuee;
 
-    private LineRenderer lineRenderer;
-
     void Start() {
         _controller = GetComponent<DroneController>();
+        _controller.patrolRadius = patrolRadius;
+        _controller.targets = _env.Towers;
         _env = GetComponentInParent<EnvManager>();
         _env.Drones.Add(gameObject);
         _controller.RegisterTeam(gameObject.tag);
         _controller.onCrash += OnCrash;
         _env.OnEndEpisode += OnEndEpisodeHandler;
 
-        lineRenderer = GetComponent<LineRenderer>();
-        lineRenderer.startWidth = 0.1f;
-        lineRenderer.endWidth = 0.1f;
-        lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-        lineRenderer.positionCount = 0;
 
         // 初期位置を保存
         StartPos = transform.localPosition;
@@ -118,22 +113,6 @@ public class DroneNavAgent : Agent {
     /// <param name="actions"></param>
     public override void OnActionReceived(ActionBuffers actions) {
         _controller.NavigationCtrl(actions);
-        
-        var destination = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
-
-        var isWaitingMode = destination == 0;
-        var isSearchMode = destination == 1;
-
-        if(isWaitingMode) {
-            _controller.NavAgent.SetDestination(transform.position);
-            lineRenderer.positionCount = 0;
-        } else if(isSearchMode) {
-            SearchFlying(actions);
-        } else  {
-            Vector3 targetPos = _env.Towers[destination - 2].transform.position;
-            _controller.NavAgent.SetDestination(targetPos);
-            lineRenderer.positionCount = 0;
-        }
     }
 
     public override void Heuristic(in ActionBuffers actionsOut) {
@@ -168,35 +147,6 @@ public class DroneNavAgent : Agent {
 
     /** Env Event Handlers */
 
-    /// <summary>
-    /// 探索行動における飛行制御関数
-    /// TODO: Nav用DroneControllerクラスができたらそっちに移管する
-    /// </summary>
-    private void SearchFlying(ActionBuffers actions) {
-        float moveX = actions.ContinuousActions[(int)NavAgentCtrlIndex.PosX];
-        float moveZ = actions.ContinuousActions[(int)NavAgentCtrlIndex.PosZ];
-
-        Vector3 moveVector = new Vector3(moveX, 0, moveZ);
-
-        // NavMesh上の有効なポイントを計算
-        Vector3 destination = _controller.NavAgent.transform.position + moveVector * patrolRadius;
-
-        NavMeshHit hit;
-        if (NavMesh.SamplePosition(destination, out hit, patrolRadius, UnityEngine.AI.NavMesh.AllAreas)) {
-            _controller.NavAgent.SetDestination(hit.position);
-            // Debug用にパスを描画
-            lineRenderer.positionCount = _controller.NavAgent.path.corners.Length;
-            lineRenderer.SetPosition(0, transform.position);
-            for (int i = 1; i < _controller.NavAgent.path.corners.Length; i++) {
-                lineRenderer.SetPosition(i, _controller.NavAgent.path.corners[i]);
-            }
-            AddReward(0.1f);
-
-        } else {
-            AddReward(-0.1f);
-            //_controller.NavAgent.SetDestination(null);
-        }
-    }
 
     private void Reset() {
         //とりあえず、0地点にリセット
