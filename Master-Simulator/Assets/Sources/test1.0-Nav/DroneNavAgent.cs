@@ -83,6 +83,8 @@ public class DroneNavAgent : Agent {
         //自身の位置・速度を観測情報に追加
         sensor.AddObservation(transform.localPosition);
         sensor.AddObservation(_controller.NavAgent.speed);
+        sensor.AddObservation(FlyMode);
+        sensor.AddObservation(Target == null ? Vector3.zero : Target.transform.localPosition);
         //現在誘導している避難者の数を観測情報に追加
         sensor.AddObservation(currentGuidedEvacuees.Count);
 
@@ -90,7 +92,13 @@ public class DroneNavAgent : Agent {
         List<GameObject> otherAgents = GetOtherAgents();
         foreach(GameObject agent in otherAgents) {
             sensor.AddObservation(agent.transform.localPosition);
-        }        
+            // 他のドローンの選択している目的地と飛行モードを観測情報に追加
+            var otherAgent = agent.GetComponent<DroneNavAgent>();
+            sensor.AddObservation(otherAgent.currentGuidedEvacuees.Count);
+            sensor.AddObservation(otherAgent.FlyMode);
+            sensor.AddObservation(otherAgent.Target == null ? Vector3.zero : otherAgent.Target.transform.localPosition);
+        }
+        
         //各避難タワーからの観測情報を追加
         //観測サイズを固定しないといけないので、最大数の避難タワーを観測情報に追加(残りは空：ZeroVector, -1)
         foreach (var towerObj in _env.Towers) {
@@ -139,6 +147,7 @@ public class DroneNavAgent : Agent {
     private void OnEndEpisodeHandler(float evacueeRate) {
         if(guidedCount > 0) {
             SetReward(guidedCount);
+            _env.AgentGuidedCount += guidedCount;
         } else {
             SetReward(-1f);
         }
