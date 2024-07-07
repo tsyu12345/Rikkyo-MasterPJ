@@ -5,7 +5,7 @@ param(
     [bool]$exe = $false
 )
 
-$configurePath = "Master-Simulator\config\test1_0.yaml"
+$configurePath = "Master-Simulator\config\test1_0_nav.yaml"
 $exePath = "Master-Simulator\build\Master-Simulator.exe"
 
 if($exe) {

@@ -66,7 +66,6 @@ public class EnvManager : MonoBehaviour {
         init();
 
         OnEvacueeAll += () => {
-            AddGroupReward();
             Agents.EndGroupEpisode();
             init();
         };
@@ -79,6 +78,8 @@ public class EnvManager : MonoBehaviour {
 
     void FixedUpdate() {
         m_ResetTimer += 1;
+        EvacuationRate = CalcEvacuationRate();
+        
         if (isEvacueeAll()) {
             OnEvacueeAll?.Invoke();
         }
@@ -87,7 +88,6 @@ public class EnvManager : MonoBehaviour {
         if ((m_ResetTimer >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0) || remainAgents.Count < 1) {
             OnEndEpisode?.Invoke(EvacuationRate);
         }
-        EvacuationRate = CalcEvacuationRate();
         UpdateUI();
     }
 
@@ -220,11 +220,13 @@ public class EnvManager : MonoBehaviour {
 
 
     private void AddGroupReward() {
-        EvacuationRate = CalcEvacuationRate();
-        // かかったステップ数を引き、制限時間に達した場合は報酬が０になるように設定
-        float timeRate = m_ResetTimer / (float)MaxEnvironmentSteps;
-        Agents.SetGroupReward(EvacuationRate);
-        Agents.AddGroupReward(-timeRate);
+        int evacuatedCount = 0;
+        foreach (GameObject evacuee in Evacuees) {
+            if (!evacuee.activeSelf) {
+                evacuatedCount++;
+            }
+        }
+        Agents.SetGroupReward(evacuatedCount);
     }
 
 

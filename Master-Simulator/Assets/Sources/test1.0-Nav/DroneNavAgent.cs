@@ -15,6 +15,8 @@ public class DroneNavAgent : Agent {
     public float patrolRadius = 10f;    
     public List<GameObject> currentGuidedEvacuees = new List<GameObject>();
     public int guidedCount = 0;
+    public GameObject Target;
+    public int FlyMode = 0;
 
     [Header("UI Elements")]
     private TextMeshPro currentGuidingCount;
@@ -50,7 +52,7 @@ public class DroneNavAgent : Agent {
         };
 
         onAddEvacuee += () => {
-            AddReward(0.1f);
+            // AddReward(0.1f);
         };
     }
 
@@ -96,16 +98,6 @@ public class DroneNavAgent : Agent {
             var tower = towerObj.GetComponent<Tower>();
             sensor.AddObservation(tower.currentCapacity);
         }
-    
-        //全避難者の座標を観測情報に追加
-        List<GameObject> evacuees = _env.Util.GetGameObjectsFromTagOnLocal(_env.gameObject, Tags.Evacuee);
-        for(int i = 0; i < _env.MaxEvacueeCount; i++) {
-            if(i < evacuees.Count) {
-                sensor.AddObservation(evacuees[i].transform.localPosition);
-            } else {
-                sensor.AddObservation(Vector3.zero);
-            }
-        }
 
     }
 
@@ -116,6 +108,12 @@ public class DroneNavAgent : Agent {
     /// <param name="actions"></param>
     public override void OnActionReceived(ActionBuffers actions) {
         _controller.FlyingCtrl(actions);
+
+        var mode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
+        var currentTarget = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
+
+        FlyMode = mode;
+        Target = mode == 2 ? _controller.Targets[currentTarget] : null;
     }
 
     public override void Heuristic(in ActionBuffers actionsOut) {
@@ -131,7 +129,6 @@ public class DroneNavAgent : Agent {
     /// 衝突した位置
     /// </param>
     private void OnCrash(Vector3 position) {
-        Debug.Log(LogPrefix + "Crash");
         //SetReward(-1.0f);
         SetReward(-1f);
         //エージェントグループからの登録を削除
@@ -140,11 +137,10 @@ public class DroneNavAgent : Agent {
     }
 
     private void OnEndEpisodeHandler(float evacueeRate) {
-        //誘導した避難者の割合に応じて報酬を設定
         if(guidedCount > 0) {
-            AddReward(guidedCount);
+            SetReward(guidedCount);
         } else {
-            AddReward(-1f);
+            SetReward(-1f);
         }
     }
 
