@@ -10,15 +10,15 @@ GameObject:
   m_Component:
   - component: {fileID: 2647234978462192167}
   - component: {fileID: 7577609265993313420}
-  - component: {fileID: 2781278964088696420}
   - component: {fileID: 748693423552692007}
   - component: {fileID: -7370073155237438483}
   - component: {fileID: -297743744353202481}
-  - component: {fileID: 7670292974199717038}
   - component: {fileID: -1504754107748429912}
   - component: {fileID: 4240392082318304696}
   - component: {fileID: -309118238216707273}
   - component: {fileID: 8838085903866372302}
+  - component: {fileID: 8209612813488976375}
+  - component: {fileID: 2781278964088696420}
   m_Layer: 0
   m_Name: NavAgent
   m_TagString: Agent
@@ -67,25 +67,6 @@ NavMeshAgent:
   m_BaseOffset: 15
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
---- !u!114 &2781278964088696420
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 604094845460622734}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ba8ecc2b7aa28004492b2715ad45504f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  agentParameters:
-    maxStep: 0
-  hasUpgradedFromAgentParameters: 1
-  MaxStep: 0
-  patrolRadius: 10
-  currentGuidedEvacuees: []
-  guidedCount: 0
 --- !u!114 &748693423552692007
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -103,10 +84,10 @@ MonoBehaviour:
     NumStackedVectorObservations: 5
     m_ActionSpec:
       m_NumContinuousActions: 3
-      BranchSizes: 07000000
+      BranchSizes: 0300000005000000
     VectorActionSize: 
     VectorActionDescriptions: []
-    VectorActionSpaceType: 0
+    VectorActionSpaceType: 1
     hasUpgradedBrainParametersWithActionSpec: 1
   m_Model: {fileID: 0}
   m_InferenceDevice: 0
@@ -161,30 +142,6 @@ MonoBehaviour:
   rayMissColor: {r: 1, g: 1, b: 1, a: 1}
   m_StartVerticalOffset: 0
   m_EndVerticalOffset: 0
---- !u!114 &7670292974199717038
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 604094845460622734}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f00502548b6d95246931b5ea26f87145, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  CtrlModel: 2
-  NavAgent: {fileID: 0}
-  Destination: {x: 0, y: 0, z: 0}
-  moveSpeed: 100
-  rotSpeed: 100
-  batteryLevel: 100
-  communicationRange: 10
-  communicateArea: {fileID: 0}
-  CrashTags:
-  - Obstacle
-  Rbody: {fileID: 0}
-  CommunicateTargetTags: []
 --- !u!54 &-1504754107748429912
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -360,6 +317,48 @@ LineRenderer:
   m_UseWorldSpace: 1
   m_Loop: 0
   m_ApplyActiveColorSpace: 1
+--- !u!114 &8209612813488976375
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 604094845460622734}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 698cf781c87af47e08be12e2517e54fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  moveSpeed: 100
+  rotSpeed: 100
+  batteryLevel: 100
+  communicationRange: 10
+  communicateArea: {fileID: 0}
+  CrashTags: []
+  Rbody: {fileID: 0}
+  CommunicateTargetTags: []
+  NavAgent: {fileID: 0}
+  Targets: []
+  PatrolRadius: 20
+--- !u!114 &2781278964088696420
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 604094845460622734}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba8ecc2b7aa28004492b2715ad45504f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  agentParameters:
+    maxStep: 0
+  hasUpgradedFromAgentParameters: 1
+  MaxStep: 0
+  patrolRadius: 10
+  currentGuidedEvacuees: []
+  guidedCount: 0
 --- !u!1 &4132943172782860169
 GameObject:
   m_ObjectHideFlags: 0

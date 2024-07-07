@@ -52,6 +52,8 @@ public class EnvManager : MonoBehaviour {
     public EvacueeAllHandler OnEvacueeAll;
     public delegate void EndEpisodeHandler(float evacueeRate);
     public EndEpisodeHandler OnEndEpisode;
+    public delegate void EpisodeInitializeHandler();
+    public EpisodeInitializeHandler OnEpisodeInitialize;
 
     private SimpleMultiAgentGroup Agents;
     private string LogPrefix = "EnvManager: ";
@@ -65,13 +67,13 @@ public class EnvManager : MonoBehaviour {
 
         OnEvacueeAll += () => {
             AddGroupReward();
-            init();
             Agents.EndGroupEpisode();
+            init();
         };
         OnEndEpisode += (float evacueeRate) => {
             AddGroupReward();
-            init();
             Agents.GroupEpisodeInterrupted();
+            init();
         };
     }
 
@@ -130,6 +132,8 @@ public class EnvManager : MonoBehaviour {
                 Evacuees.Add(evacueeObj);
             });
         }
+
+        OnEpisodeInitialize?.Invoke();
     }
 
     public void UnregisterAgent(GameObject drone) {

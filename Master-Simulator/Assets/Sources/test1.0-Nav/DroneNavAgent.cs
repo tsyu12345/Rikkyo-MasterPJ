@@ -32,19 +32,22 @@ public class DroneNavAgent : Agent {
     void Start() {
         _controller = GetComponent<NavController>();
         _controller.PatrolRadius = patrolRadius;
-        _controller.Targets = _env.Towers;
         _env = GetComponentInParent<EnvManager>();
         _env.Drones.Add(gameObject);
         _controller.RegisterTeam(gameObject.tag);
         _controller.onCrash += OnCrash;
         _env.OnEndEpisode += OnEndEpisodeHandler;
 
-
         // 初期位置を保存
         StartPos = transform.localPosition;
 
         currentGuidingCount = transform.Find("GuidingCounter").GetComponent<TextMeshPro>();
         currentGoalCount = transform.Find("GuidedCounter").GetComponent<TextMeshPro>();
+
+        _env.OnEpisodeInitialize += () => {
+            Debug.Log("Episode Initial" + _env.Towers.Count);
+            _controller.Targets = _env.Towers;
+        };
 
         onAddEvacuee += () => {
             AddReward(0.1f);

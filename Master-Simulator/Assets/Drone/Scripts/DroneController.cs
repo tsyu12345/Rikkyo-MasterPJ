@@ -43,7 +43,7 @@ public abstract class DroneController : MonoBehaviour {
     public abstract void FlyingCtrl(ActionBuffers actions);
 
 
-    void Start() {
+    protected void Start() {
         Rbody = GetComponent<Rigidbody>();
         //communicateArea.transform.localScale = new Vector3(communicationRange, communicationRange, communicationRange);
         StartCoroutine(BatteryDrainCoroutine());

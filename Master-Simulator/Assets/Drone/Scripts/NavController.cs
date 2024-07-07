@@ -18,6 +18,8 @@ public class NavController : DroneController {
 
     void Start() {
 
+        base.Start();
+
         NavAgent = GetComponent<NavMeshAgent>();
         NavAgent.autoBraking = false;
 
@@ -42,10 +44,10 @@ public class NavController : DroneController {
         float speedInput = actions.ContinuousActions[(int)NavAgentCtrlIndex.Speed]; //速度の入力
         NavAgent.speed = speedInput * moveSpeed;
 
-        var destination = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
+        var flyMode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
 
-        var isWaitingMode = destination == 0;
-        var isSearchMode = destination == 1;
+        var isWaitingMode = flyMode == 0;
+        var isSearchMode = flyMode == 1;
 
         if(isWaitingMode) {
             NavAgent.SetDestination(transform.position);
@@ -53,7 +55,7 @@ public class NavController : DroneController {
         } else if(isSearchMode) {
             SearchFlying(actions);
         } else  {
-            Vector3 target = Targets[destination - 2].transform.position;
+            Vector3 target = Targets[(int)NavAgentCtrlIndex.Destination].transform.position;
             NavAgent.SetDestination(target);
             lineRenderer.positionCount = 0;
         }
@@ -64,8 +66,8 @@ public class NavController : DroneController {
     /// TODO: Nav用DroneControllerクラスができたらそっちに移管する
     /// </summary>
     private void SearchFlying(ActionBuffers actions) {
-        float moveX = actions.ContinuousActions[(int)NavAgentCtrlIndex.PosX];
-        float moveZ = actions.ContinuousActions[(int)NavAgentCtrlIndex.PosZ];
+        float moveX = actions.ContinuousActions[(int)NavAgentCtrlIndex.PosX] * NavAgent.speed;
+        float moveZ = actions.ContinuousActions[(int)NavAgentCtrlIndex.PosZ] * NavAgent.speed;
 
         Vector3 moveVector = new Vector3(moveX, 0, moveZ);
 
