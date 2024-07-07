@@ -220,13 +220,7 @@ public class EnvManager : MonoBehaviour {
 
 
     private void AddGroupReward() {
-        int evacuatedCount = 0;
-        foreach (GameObject evacuee in Evacuees) {
-            if (!evacuee.activeSelf) {
-                evacuatedCount++;
-            }
-        }
-        Agents.SetGroupReward(evacuatedCount);
+        Agents.SetGroupReward(AgentGuidedCount);
     }
 
 
