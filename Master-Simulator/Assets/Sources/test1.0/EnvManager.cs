@@ -66,6 +66,7 @@ public class EnvManager : MonoBehaviour {
         init();
 
         OnEvacueeAll += () => {
+            AddGroupReward();
             Agents.EndGroupEpisode();
             init();
         };
