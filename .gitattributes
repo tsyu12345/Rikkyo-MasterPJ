@@ -2,3 +2,4 @@
 * text=auto
 Master-Simulator/Assets/Scenes/** filter=lfs diff=lfs merge=lfs -text
 Master-Simulator/Assets/StreamingAssets/** filter=lfs diff=lfs merge=lfs -text
+Master-Simulator/Packages/com.synesthesias.plateau-unity-sdk/** filter=lfs diff=lfs merge=lfs -text
