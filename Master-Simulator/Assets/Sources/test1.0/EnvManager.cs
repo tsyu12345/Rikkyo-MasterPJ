@@ -28,12 +28,18 @@ public class EnvManager : MonoBehaviour {
     /** エージェントの設定*/
     public int MaxAgentCount = 1;
     public int MinAgentCount = 1;
+    /* 障害物の設定 */
+    public int MaxObstacleCount = 1;
+    public int MinObstacleCount = 1;
 
     [Header("GameObjects")]
     public GameObject Tower;
     public GameObject Evacuee;
     public GameObject TowerSpawn;
     public GameObject EvacueesSpawn;
+    public GameObject ObstacleWall;
+    public GameObject Aisle;
+
     public List<GameObject> Drones;
     public List<GameObject> Evacuees;
     public List<GameObject> Towers;
@@ -98,6 +104,7 @@ public class EnvManager : MonoBehaviour {
     public void init() {
         RemoveObjectAll(Tags.Tower);
         RemoveObjectAll(Tags.Evacuee);
+        RemoveObjectAll(Tags.Obstacle);
         foreach(var drone in Drones) {
            UnregisterAgent(drone);
         }
@@ -113,6 +120,7 @@ public class EnvManager : MonoBehaviour {
             drone.SetActive(true);
         }
         
+        // タワーのスポーン
         int countTowers = UnityEngine.Random.Range(MinTowerCount, MaxTowerCount);
         for(int i = 0; i < countTowers; i++) {
             SpawnObjects(Tower, TowerSpawn, (towerObj)=> {
@@ -126,6 +134,7 @@ public class EnvManager : MonoBehaviour {
             });
         }
 
+        // 避難者キャラのスポーン
         int countEvacuees = UnityEngine.Random.Range(MinEvacueeCount, MaxEvacueeCount);
         for(int i = 0; i < countEvacuees; i++) {
             SpawnObjects(Evacuee, EvacueesSpawn, (evacueeObj)=> {
@@ -133,6 +142,15 @@ public class EnvManager : MonoBehaviour {
                 Evacuees.Add(evacueeObj);
             });
         }
+
+        // 障害物のスポーン
+        int countObstacles = UnityEngine.Random.Range(MinObstacleCount, MaxObstacleCount);
+        for(int i = 0; i < countObstacles; i++) {
+            SpawnObjects(ObstacleWall, Aisle, (obstacleObj)=> {
+                obstacleObj.tag = Tags.Obstacle;
+            });
+        }
+
 
         OnEpisodeInitialize?.Invoke();
     }
