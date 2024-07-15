@@ -9,7 +9,7 @@ using UtilityFuncs;
 using Constants;
 
 /// <summary>
-/// ドローンエージェントの定義
+/// 　物理コントロール用のドローンエージェント
 /// </summary>
 public class DroneAgent : Agent {
 
@@ -20,7 +20,7 @@ public class DroneAgent : Agent {
     private TextMeshPro currentGuidingCount;
     private TextMeshPro currentGoalCount;
     private PhysicsController _controller;
-    private EnvManager _env;
+    private FieldEnvManager _env;
 
     private Vector3 StartPos;
 
@@ -31,7 +31,7 @@ public class DroneAgent : Agent {
 
     void Start() {
         _controller = GetComponent<PhysicsController>();
-        _env = GetComponentInParent<EnvManager>();
+        _env = GetComponentInParent<FieldEnvManager>();
         _env.Drones.Add(gameObject);
         _controller.RegisterTeam(gameObject.tag);
         _controller.onCrash += OnCrash;

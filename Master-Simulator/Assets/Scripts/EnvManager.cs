@@ -9,41 +9,26 @@ using UnityEngine.UI;
 using TMPro; 
 
 /// <summary>
-/// 環境に関するスクリプトのエントリポイント。Fieldオブジェクトにアタッチされる想定
-/// TODO:Spawn処理を共通化する
+/// 環境に関するスクリプトの管理
+/// その基底クラス 
 /// </summary>
-public class EnvManager : MonoBehaviour {
+public abstract class EnvManager : MonoBehaviour {
 
     [Header("Environment Parameters")]
     public float EvacuationRate = 0.0f;
     [Tooltip("Max Environment Steps")] public int MaxEnvironmentSteps = 1000; 
-    /** 避難タワーの設定*/
-    public int MaxTowerCount;
-    public int MinTowerCount = 1;
-    public int MinTowerCapacity = 1;
-    public int MaxTowerCapacity = 10;
     /**避難者の設定*/
     public int MinEvacueeCount = 1;
     public int MaxEvacueeCount = 10;
-    /** エージェントの設定*/
-    public int MaxAgentCount = 1;
-    public int MinAgentCount = 1;
-    /* 障害物の設定 */
-    public int MaxObstacleCount = 1;
-    public int MinObstacleCount = 1;
 
     [Header("GameObjects")]
-    public GameObject Tower;
     public GameObject Evacuee;
-    public GameObject TowerSpawn;
     public GameObject EvacueesSpawn;
-    public GameObject ObstacleWall;
-    public GameObject Aisle;
 
+    [Header("Objects")]
     public List<GameObject> Drones;
     public List<GameObject> Evacuees;
     public List<GameObject> Towers;
-    public GameObject floor;
     
     [Header("UI Elements")]
     public TextMeshProUGUI stepCounter;
@@ -62,24 +47,27 @@ public class EnvManager : MonoBehaviour {
     public EpisodeInitializeHandler OnEpisodeInitialize;
 
     private SimpleMultiAgentGroup Agents;
-    private string LogPrefix = "EnvManager: ";
-    private int m_ResetTimer;
-    private delegate void SpawnCallback(GameObject obj);
+    protected string LogPrefix = "EnvManager: ";
+    protected int m_ResetTimer;
+    protected delegate void SpawnCallback(GameObject obj);
+
+    /** 抽象メソッド */
+    public abstract void InitEnv();
 
     void Start() {
         Agents = new SimpleMultiAgentGroup();
         Util = GetComponent<Utils>();
-        init();
+        Init();
 
         OnEvacueeAll += () => {
             AddGroupReward();
             Agents.EndGroupEpisode();
-            init();
+            Init();
         };
         OnEndEpisode += (float evacueeRate) => {
             AddGroupReward();
             Agents.GroupEpisodeInterrupted();
-            init();
+            Init();
         };
     }
 
@@ -101,57 +89,8 @@ public class EnvManager : MonoBehaviour {
     /// <summary>
     /// 環境の初期化,全体エピソード開始時にコールされる
     /// </summary>
-    public void init() {
-        RemoveObjectAll(Tags.Tower);
-        RemoveObjectAll(Tags.Evacuee);
-        RemoveObjectAll(Tags.Obstacle);
-        foreach(var drone in Drones) {
-           UnregisterAgent(drone);
-        }
-        Towers.Clear();
-        Evacuees.Clear();
-
-        m_ResetTimer = 0;
-        AgentGuidedCount = 0;
-        Evacuees = new List<GameObject>();
-        Towers = new List<GameObject>();
-        RegisterAgents(Tags.Agent);
-        foreach(var drone in Drones) {
-            drone.SetActive(true);
-        }
-        
-        // タワーのスポーン
-        int countTowers = UnityEngine.Random.Range(MinTowerCount, MaxTowerCount);
-        for(int i = 0; i < countTowers; i++) {
-            SpawnObjects(Tower, TowerSpawn, (towerObj)=> {
-                //Towerのパラメータをランダムに設定
-                Tower tower = towerObj.GetComponent<Tower>();
-                tower.MaxCapacity = UnityEngine.Random.Range(MinTowerCapacity, MaxTowerCapacity);
-                tower.NowAccCount = 0;
-                tower.uuid = Guid.NewGuid().ToString();
-                towerObj.tag = Tags.Tower;
-                Towers.Add(towerObj);
-            });
-        }
-
-        // 避難者キャラのスポーン
-        int countEvacuees = UnityEngine.Random.Range(MinEvacueeCount, MaxEvacueeCount);
-        for(int i = 0; i < countEvacuees; i++) {
-            SpawnObjects(Evacuee, EvacueesSpawn, (evacueeObj)=> {
-                evacueeObj.tag = Tags.Evacuee;
-                Evacuees.Add(evacueeObj);
-            });
-        }
-
-        // 障害物のスポーン
-        int countObstacles = UnityEngine.Random.Range(MinObstacleCount, MaxObstacleCount);
-        for(int i = 0; i < countObstacles; i++) {
-            SpawnObjects(ObstacleWall, Aisle, (obstacleObj)=> {
-                obstacleObj.tag = Tags.Obstacle;
-            });
-        }
-
-
+    public void Init() {
+        InitEnv();
         OnEpisodeInitialize?.Invoke();
     }
 
@@ -160,8 +99,7 @@ public class EnvManager : MonoBehaviour {
         Agents.UnregisterAgent(agent);
     }
 
-
-    private void RegisterAgents(string agentTag) {
+    protected void RegisterAgents(string agentTag) {
         GameObject[] agents = GameObject.FindGameObjectsWithTag(Tags.Agent);
         
         foreach (GameObject agent in agents) {
@@ -170,10 +108,7 @@ public class EnvManager : MonoBehaviour {
     }
 
 
-    private void SpawnObjects(GameObject obj, GameObject spawnArea = null, SpawnCallback callback = null) {
-        if (spawnArea == null) {
-            spawnArea = floor;
-        }
+    protected void SpawnObjects(GameObject obj, GameObject spawnArea, SpawnCallback callback = null) {
         Vector3 size = spawnArea.GetComponent<Collider>().bounds.size;
         Vector3 center = spawnArea.transform.position;
         Vector3 randomPosition = GenerateRandomPosition(center, size);
@@ -182,7 +117,7 @@ public class EnvManager : MonoBehaviour {
         callback?.Invoke(newObject);
     }
 
-    private void RemoveObjectAll(string tag) {
+    protected void RemoveObjectAll(string tag) {
         GameObject[] objects = FindObjectsOfType<GameObject>(true);
         foreach (GameObject obj in objects) {
             if (obj.CompareTag(tag)) {
@@ -192,7 +127,7 @@ public class EnvManager : MonoBehaviour {
     }
 
 
-    private Vector3 GenerateRandomPosition(Vector3 center, Vector3 size) {
+    protected Vector3 GenerateRandomPosition(Vector3 center, Vector3 size) {
         float x = UnityEngine.Random.Range(center.x - size.x / 2, center.x + size.x / 2);
         float z = UnityEngine.Random.Range(center.z - size.z / 2, center.z + size.z / 2);
 
@@ -204,7 +139,7 @@ public class EnvManager : MonoBehaviour {
     /// <summary>
     /// Evacueesの全員が避難したかどうかを判定
     /// </summary>
-    private bool isEvacueeAll() {
+    protected bool isEvacueeAll() {
         foreach (GameObject evacuee in Evacuees) {
             Evacuee eva = evacuee.GetComponent<Evacuee>();
             if (!eva.isEvacuate) {
@@ -241,6 +176,5 @@ public class EnvManager : MonoBehaviour {
     private void AddGroupReward() {
         Agents.SetGroupReward(AgentGuidedCount);
     }
-
 
 }
