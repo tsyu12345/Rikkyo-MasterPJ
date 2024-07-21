@@ -12,10 +12,17 @@ using TMPro;
 /// 都市モデル環境用のスクリプト
 /// </summary>
 public class PLATEAUEnvManager : EnvManager {
+
+    [SerializeField]
+    private List<GameObject> SpawnAreas = new List<GameObject>();
+    public override List<GameObject> EvacueesSpawnAreas {
+        get { return SpawnAreas; }
+        set { SpawnAreas = value; }
+    }
     
     public override void InitEnv() {
 
-        DestoryEnv();
+        DestroyEnv();
 
         RegisterAgents(Tags.Agent);
         foreach(var drone in Drones) {
@@ -23,13 +30,11 @@ public class PLATEAUEnvManager : EnvManager {
         }
         // 避難者キャラのスポーン
         // TODO:スポーン地点を複数用意する必要あり
-        int countEvacuees = UnityEngine.Random.Range(MinEvacueeCount, MaxEvacueeCount);
-        for(int i = 0; i < countEvacuees; i++) {
-            SpawnObjects(Evacuee, EvacueesSpawn, (evacueeObj)=> {
-                evacueeObj.tag = Tags.Evacuee;
-                Evacuees.Add(evacueeObj);
-            });
+        foreach(var spawnAreaObj in EvacueesSpawnAreas) {
+            var spawnArea = spawnAreaObj.GetComponent<SpawnArea>();
+            SpawnEvacuees(spawnAreaObj, spawnArea.size);
         }
+        
         RegisterTowers();
     }
 
@@ -41,7 +46,7 @@ public class PLATEAUEnvManager : EnvManager {
         }
     }
 
-    private void DestoryEnv() {
+    private void DestroyEnv() {
         RemoveObjectAll(Tags.Evacuee);
         foreach(var drone in Drones) {
            UnregisterAgent(drone);
@@ -51,6 +56,16 @@ public class PLATEAUEnvManager : EnvManager {
         m_ResetTimer = 0;
         AgentGuidedCount = 0;
         Evacuees = new List<GameObject>();
+    }
+
+    private void SpawnEvacuees(GameObject spawnObject, int count) {
+        Debug.Log("Spawning Evacuees");
+        for(int i = 0; i < count; i++) {
+            SpawnObject(Evacuee, spawnObject, (evacueeObj)=> {
+                evacueeObj.tag = Tags.Evacuee;
+                Evacuees.Add(evacueeObj);
+            });
+        }
     }
 
 }

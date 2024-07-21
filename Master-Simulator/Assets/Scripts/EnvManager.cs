@@ -23,7 +23,7 @@ public abstract class EnvManager : MonoBehaviour {
 
     [Header("GameObjects")]
     public GameObject Evacuee;
-    public GameObject EvacueesSpawn;
+    public abstract List<GameObject> EvacueesSpawnAreas { get; set; }
 
     [Header("Objects")]
     public List<GameObject> Drones;
@@ -108,7 +108,7 @@ public abstract class EnvManager : MonoBehaviour {
     }
 
 
-    protected void SpawnObjects(GameObject obj, GameObject spawnArea, SpawnCallback callback = null) {
+    protected void SpawnObject(GameObject obj, GameObject spawnArea, SpawnCallback callback = null) {
         Vector3 size = spawnArea.GetComponent<Collider>().bounds.size;
         Vector3 center = spawnArea.transform.position;
         Vector3 randomPosition = GenerateRandomPosition(center, size);
