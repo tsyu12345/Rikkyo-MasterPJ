@@ -17,6 +17,7 @@ public class Evacuee : MonoBehaviour {
     public int SearchRadius; //探索範囲
     [Header("Evacuee Situations")]
     public bool isEvacuate = false;
+    public bool inRangeTower = false;
     [Header("Evacuee Targets")]
     public bool isFollowingDrone = false;
     public GameObject FollowTarget;
@@ -68,7 +69,15 @@ public class Evacuee : MonoBehaviour {
     }
 
     void OnTriggerEnter(Collider other) {
-        Debug.Log(LogPrefix + "OnTriggerEnter: " + other.tag);
+        if(other.CompareTag(Tags.Tower)) {
+            inRangeTower = true;
+        }
+    }
+
+    void OnTriggerExit(Collider other) {
+        if(other.CompareTag(Tags.Tower)) {
+            inRangeTower = false;
+        }
     }
 
     /// <summary>
@@ -116,7 +125,7 @@ public class Evacuee : MonoBehaviour {
     private void SearchDrone() {
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, SearchRadius);
         foreach (var hitCollider in hitColliders) {
-            if (hitCollider.CompareTag(Tags.Agent)) {
+            if (hitCollider.CompareTag(Tags.Agent) && !inRangeTower) {
                 isFollowingDrone = true;
                 FollowTarget = hitCollider.gameObject;
                 if(followedDrone != null) { //前に追跡していたドローンがいた場合、リストから削除
