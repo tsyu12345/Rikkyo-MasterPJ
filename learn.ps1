@@ -1,12 +1,12 @@
 param(
     [int]$envs= 4,
-    [int]$modelId=0,
+    [string]$modelId="0",
     [bool]$force = $false,
     [bool]$exe = $false
 )
 
 $configurePath = "Master-Simulator\config\test1_0_nav.yaml"
-$exePath = "Master-Simulator\build\Master-Simulator.exe"
+$exePath = "Master-Simulator\build2\Master-Simulator.exe"
 
 if($exe) {
     if($force) {
