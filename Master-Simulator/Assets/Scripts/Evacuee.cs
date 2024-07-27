@@ -15,7 +15,6 @@ public class Evacuee : MonoBehaviour {
     public string Gender; // 性別
     public float Speed; //移動速度
     public int SearchRadius; //探索範囲
-    public float ValidScope = 10.0f; // #35 エージェントとカレント選択のタワーの距離がこれ以下の場合、エージェント追従を行わない
     [Header("Evacuee Situations")]
     public bool isEvacuate = false;
     public bool inRangeTower = false;
@@ -50,9 +49,9 @@ public class Evacuee : MonoBehaviour {
     }
     
     void Update() {
-        if(!isFollowingDrone && TargetDistance > ValidScope) { // #35 タワーの距離が一定値以下の場合、エージェント追従を行わない
-            SearchDrone();
-        }
+        
+        SearchDrone();
+
         if(!isFollowingDrone || FollowTarget == null) {
             List<GameObject> towers = SearchTowers(excludeTowers);
             if(towers.Count > 0) {
@@ -130,6 +129,12 @@ public class Evacuee : MonoBehaviour {
         foreach (var hitCollider in hitColliders) {
             if (hitCollider.CompareTag(Tags.Agent)) {
                 isFollowingDrone = true;
+                // #35 : タワー直前でのエージェント追従を防止する
+                var towerObj = FollowTarget;
+                var towerAgentDist = Vector3.Distance(hitCollider.transform.position, towerObj.transform.position);
+                if(towerAgentDist < 10.0f) {
+                    return;
+                }
                 FollowTarget = hitCollider.gameObject;
                 if(followedDrone != null) { //前に追跡していたドローンがいた場合、リストから削除
                     SendRemoveSignalForDrone(followedDrone);
