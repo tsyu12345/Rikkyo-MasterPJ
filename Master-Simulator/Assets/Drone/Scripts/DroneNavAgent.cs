@@ -16,6 +16,7 @@ public class DroneNavAgent : Agent {
     public List<GameObject> currentGuidedEvacuees = new List<GameObject>();
     public int guidedCount = 0;
     public GameObject Target;
+    public int currentTowerIndex = -1;
     public int FlyMode = 0;
 
     [Header("UI Elements")]
@@ -80,32 +81,41 @@ public class DroneNavAgent : Agent {
     /// </summary>
     /// <param name="sensor"></param>
     public override void CollectObservations(VectorSensor sensor) {
-        //自身の位置・速度を観測情報に追加
-        sensor.AddObservation(transform.localPosition);
+        //自身の位置・速度・飛行モード・選択しているタワーのindex・タワーまでの距離を観測情報に追加
+        sensor.AddObservation(transform.position);
         sensor.AddObservation(_controller.NavAgent.speed);
         sensor.AddObservation(FlyMode);
-        sensor.AddObservation(Target == null ? Vector3.zero : Target.transform.localPosition);
+        sensor.AddObservation(currentTowerIndex);
+        if(Target != null) {
+            sensor.AddObservation(Vector3.Distance(transform.position, Target.transform.position));
+        } else {
+            sensor.AddObservation(-1f);
+        }
         //現在誘導している避難者の数を観測情報に追加
         sensor.AddObservation(currentGuidedEvacuees.Count);
+        //ゴール済みの避難者の数を観測情報に追加
+        sensor.AddObservation(guidedCount);
 
         //他のドローンの位置を観測情報に追加
         List<GameObject> otherAgents = GetOtherAgents();
         foreach(GameObject agent in otherAgents) {
-            sensor.AddObservation(agent.transform.localPosition);
-            // 他のドローンの選択している目的地と飛行モードを観測情報に追加
+            sensor.AddObservation(agent.transform.position);
             var otherAgent = agent.GetComponent<DroneNavAgent>();
-            sensor.AddObservation(otherAgent.currentGuidedEvacuees.Count);
-            sensor.AddObservation(otherAgent.FlyMode);
-            sensor.AddObservation(otherAgent.Target == null ? Vector3.zero : otherAgent.Target.transform.localPosition);
+            List<float> info = new List<float>();
+            info.Add((float)otherAgent.currentGuidedEvacuees.Count);
+            info.Add((float)otherAgent.FlyMode);
+            info.Add((float)otherAgent.currentTowerIndex);
+            sensor.AddObservation(info);
         }
         
         //各避難タワーからの観測情報を追加
-        //観測サイズを固定しないといけないので、最大数の避難タワーを観測情報に追加(残りは空：ZeroVector, -1)
+        var currentTowerCapacity = new List<float>();
         foreach (var towerObj in _env.Towers) {
             //sensor.AddObservation(tower.transform.localPosition);
             var tower = towerObj.GetComponent<Tower>();
-            sensor.AddObservation(tower.currentCapacity);
+            currentTowerCapacity.Add((float)tower.currentCapacity);
         }
+        sensor.AddObservation(currentTowerCapacity);
 
     }
 
@@ -122,6 +132,22 @@ public class DroneNavAgent : Agent {
 
         FlyMode = mode;
         Target = mode == 2 ? _controller.Targets[currentTarget] : null;
+        currentTowerIndex = mode == 2 ? currentTarget : -1;
+
+        //#46 1度目のタワー到達 + 誘導後にまだか抱えている避難者がいる場合、有効なタワー選択をしなかったら個別のエージェントに対し負の報酬を与えてみる。
+        if(mode == 2) {
+            //選択したタワーのカレントのキャパを取得し、0以下の場合は負の報酬を与える
+            var tower = _controller.Targets[currentTarget].GetComponent<Tower>();
+            if(tower.currentCapacity <= 0) {
+                SetReward(-1f);
+            }
+        } else {
+            // 誘導中の避難者がいて、タワーが選択されていない場合、負の報酬を与える
+            if(currentGuidedEvacuees.Count > 0) {
+                SetReward(-1f);
+            }
+        }
+
     }
 
     public override void Heuristic(in ActionBuffers actionsOut) {
