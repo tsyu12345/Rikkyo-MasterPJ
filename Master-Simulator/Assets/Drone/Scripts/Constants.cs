@@ -4,6 +4,7 @@ namespace Constants {
         public const string Agent = "Agent";
         public const string Evacuee = "Evacuee";
         public const string Obstacle = "Obstacle";
+        public const string EvacueeSpawnArea = "Respawn";
     }
 
     public enum ControlModel {

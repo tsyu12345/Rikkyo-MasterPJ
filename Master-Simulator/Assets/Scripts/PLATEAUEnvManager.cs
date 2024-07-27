@@ -6,6 +6,7 @@ using UnityEngine;
 using Constants;
 using UtilityFuncs;
 using UnityEngine.UI;
+using UnityEngine.AI;
 using TMPro; 
 
 /// <summary>
@@ -14,10 +15,26 @@ using TMPro;
 public class PLATEAUEnvManager : EnvManager {
 
     [SerializeField]
-    private List<GameObject> SpawnAreas = new List<GameObject>();
+    private List<GameObject> evacueesSpawnAreas;
+    private Transform[] spawnPoints;
+
     public override List<GameObject> EvacueesSpawnAreas {
-        get { return SpawnAreas; }
-        set { SpawnAreas = value; }
+        get {
+            return evacueesSpawnAreas;
+        }
+        set { 
+            evacueesSpawnAreas = value;
+        }
+    }
+
+    public override void Start() {
+        base.Start();
+
+        var sps = GameObject.FindGameObjectsWithTag(Tags.EvacueeSpawnArea);
+        foreach (var sp in sps) {
+            EvacueesSpawnAreas.Add(sp);
+            spawnPoints = sp.GetComponentsInChildren<Transform>();
+        }
     }
     
     public override void InitEnv() {
@@ -28,8 +45,6 @@ public class PLATEAUEnvManager : EnvManager {
         foreach(var drone in Drones) {
             drone.SetActive(true);
         }
-        // 避難者キャラのスポーン
-        // TODO:スポーン地点を複数用意する必要あり
         foreach(var spawnAreaObj in EvacueesSpawnAreas) {
             var spawnArea = spawnAreaObj.GetComponent<SpawnArea>();
             SpawnEvacuees(spawnAreaObj, spawnArea.size);
@@ -59,12 +74,12 @@ public class PLATEAUEnvManager : EnvManager {
     }
 
     private void SpawnEvacuees(GameObject spawnObject, int count) {
-        Debug.Log("Spawning Evacuees");
-        for(int i = 0; i < count; i++) {
-            SpawnObject(Evacuee, spawnObject, (evacueeObj)=> {
-                evacueeObj.tag = Tags.Evacuee;
-                Evacuees.Add(evacueeObj);
-            });
+        foreach (Transform spawnPoint in spawnPoints) {
+            // ナビメッシュ上の位置にキャラクターをスポーンさせる
+            NavMeshHit hit;
+            if (UnityEngine.AI.NavMesh.SamplePosition(spawnPoint.position, out hit, 1.0f, UnityEngine.AI.NavMesh.AllAreas)) {
+                Instantiate(Evacuee, hit.position, Quaternion.identity);
+            }
         }
     }
 

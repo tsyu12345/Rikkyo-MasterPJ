@@ -54,7 +54,7 @@ public abstract class EnvManager : MonoBehaviour {
     /** 抽象メソッド */
     public abstract void InitEnv();
 
-    void Start() {
+    public virtual void Start() {
         Agents = new SimpleMultiAgentGroup();
         Util = GetComponent<Utils>();
         Init();
