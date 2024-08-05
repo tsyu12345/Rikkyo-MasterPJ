@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using System;
 using Unity.MLAgents;
 using UnityEngine;
 using Constants;
@@ -16,7 +15,6 @@ public class PLATEAUEnvManager : EnvManager {
 
     [SerializeField]
     private List<GameObject> evacueesSpawnAreas;
-    private Transform[] spawnPoints;
 
     public override List<GameObject> EvacueesSpawnAreas {
         get {
@@ -27,14 +25,14 @@ public class PLATEAUEnvManager : EnvManager {
         }
     }
 
+    [Header("Evacuees Spawn Settings")]
+    public float EvacueeSpawnRadius = 10.0f; // ランダム生成範囲の半径
+    public int EvacueeSpawnMaxAttempts = 30; // 最大試行回数
+
+    public int EvacueeSize = 100; // 避難者の数
+
     public override void Start() {
         base.Start();
-
-        var sps = GameObject.FindGameObjectsWithTag(Tags.EvacueeSpawnArea);
-        foreach (var sp in sps) {
-            EvacueesSpawnAreas.Add(sp);
-            spawnPoints = sp.GetComponentsInChildren<Transform>();
-        }
     }
     
     public override void InitEnv() {
@@ -45,9 +43,9 @@ public class PLATEAUEnvManager : EnvManager {
         foreach(var drone in Drones) {
             drone.SetActive(true);
         }
-        foreach(var spawnAreaObj in EvacueesSpawnAreas) {
-            var spawnArea = spawnAreaObj.GetComponent<SpawnArea>();
-            SpawnEvacuees(spawnAreaObj, spawnArea.size);
+        
+        for(int i = 0; i < EvacueeSize; i++) {
+            SpawnObjectOnNavMesh();
         }
         
         RegisterTowers();
@@ -73,14 +71,38 @@ public class PLATEAUEnvManager : EnvManager {
         Evacuees = new List<GameObject>();
     }
 
-    private void SpawnEvacuees(GameObject spawnObject, int count) {
-        foreach (Transform spawnPoint in spawnPoints) {
-            // ナビメッシュ上の位置にキャラクターをスポーンさせる
-            NavMeshHit hit;
-            if (UnityEngine.AI.NavMesh.SamplePosition(spawnPoint.position, out hit, 1.0f, UnityEngine.AI.NavMesh.AllAreas)) {
-                Instantiate(Evacuee, hit.position, Quaternion.identity);
+    private void SpawnObjectOnNavMesh() {
+        for (int i = 0; i < EvacueeSpawnMaxAttempts; i++) {
+            Vector3 randomPoint = GetRandomPoint();
+            if (TryGetNavMeshPosition(randomPoint, out Vector3 navMeshPosition)) {
+                var newEvacuee = Instantiate(Evacuee, navMeshPosition, Quaternion.identity);
+                Evacuees.Add(newEvacuee);
+                newEvacuee.transform.parent = transform;
+                newEvacuee.tag = Tags.Evacuee;
+                return;
             }
         }
+        Debug.LogWarning("Could not find a suitable NavMesh position after maximum attempts.");
     }
+
+
+    private Vector3 GetRandomPoint() {
+        Vector3 randomPoint = transform.position + Random.insideUnitSphere * EvacueeSpawnRadius;
+        randomPoint.y = transform.position.y; // 必要に応じて高さを調整
+        return randomPoint;
+    }
+
+    private bool TryGetNavMeshPosition(Vector3 point, out Vector3 navMeshPosition) {
+        NavMeshHit hit;
+        if (NavMesh.SamplePosition(point, out hit, EvacueeSpawnRadius, NavMesh.AllAreas)) {
+            navMeshPosition = hit.position;
+            return true;
+        }
+
+        navMeshPosition = Vector3.zero;
+        return false;
+    }
+
+
 
 }
