@@ -22,6 +22,14 @@ public class FieldEnvManager : EnvManager {
     public int MaxObstacleCount = 1;
     public int MinObstacleCount = 1;
     [Header("GameObjects")]
+    public override List<GameObject> EvacueesSpawnAreas { 
+        get {
+            return EvacueesSpawnAreas;
+        }
+        set {
+            EvacueesSpawnAreas = value;
+        }
+    }
     public GameObject Tower;
     public GameObject TowerSpawn;
     public GameObject ObstacleWall;
@@ -49,7 +57,7 @@ public class FieldEnvManager : EnvManager {
         // タワーのスポーン
         int countTowers = UnityEngine.Random.Range(MinTowerCount, MaxTowerCount);
         for(int i = 0; i < countTowers; i++) {
-            SpawnObjects(Tower, TowerSpawn, (towerObj)=> {
+            SpawnObject(Tower, TowerSpawn, (towerObj)=> {
                 //Towerのパラメータをランダムに設定
                 Tower tower = towerObj.GetComponent<Tower>();
                 tower.MaxCapacity = UnityEngine.Random.Range(MinTowerCapacity, MaxTowerCapacity);
@@ -62,17 +70,19 @@ public class FieldEnvManager : EnvManager {
 
         // 避難者キャラのスポーン
         int countEvacuees = UnityEngine.Random.Range(MinEvacueeCount, MaxEvacueeCount);
-        for(int i = 0; i < countEvacuees; i++) {
-            SpawnObjects(Evacuee, EvacueesSpawn, (evacueeObj)=> {
+        foreach(var spawnObj in EvacueesSpawnAreas) {
+            for(int i = 0; i < countEvacuees; i++) {
+            SpawnObject(Evacuee, spawnObj, (evacueeObj)=> {
                 evacueeObj.tag = Tags.Evacuee;
                 Evacuees.Add(evacueeObj);
             });
+        }
         }
 
         // 障害物のスポーン
         int countObstacles = UnityEngine.Random.Range(MinObstacleCount, MaxObstacleCount);
         for(int i = 0; i < countObstacles; i++) {
-            SpawnObjects(ObstacleWall, Aisle, (obstacleObj)=> {
+            SpawnObject(ObstacleWall, Aisle, (obstacleObj)=> {
                 obstacleObj.tag = Tags.Obstacle;
             });
         }

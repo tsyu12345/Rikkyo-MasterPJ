@@ -145,7 +145,7 @@ public class Evacuee : MonoBehaviour {
     /// <param name="excludeTowerUUIDs">除外するタワーのUUID.未指定の場合はnull</param>
     /// <returns>localField内のTowerオブジェクトのリスト</returns>
     private List<GameObject> SearchTowers(List<string> excludeTowerUUIDs = null) {
-        List<GameObject> towers = _env.Util.GetGameObjectsFromTagOnLocal(Field, Tags.Tower);
+        GameObject[] towers = GameObject.FindGameObjectsWithTag(Tags.Tower);
         List<GameObject> sortedTowers = new List<GameObject>();
         foreach (var tower in towers) {
             if(excludeTowerUUIDs != null && excludeTowerUUIDs.Contains(tower.GetComponent<Tower>().uuid)) {
