@@ -28,6 +28,7 @@ public abstract class EnvManager : MonoBehaviour {
     [Header("Objects")]
     public List<GameObject> Drones;
     public List<GameObject> Evacuees;
+    public bool allEvacueesReady = false; // 全ての避難者がパス検索を終えたかどうか
     public List<GameObject> Towers;
     
     [Header("UI Elements")]
