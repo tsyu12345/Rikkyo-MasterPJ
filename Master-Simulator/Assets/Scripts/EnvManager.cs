@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.MLAgents;
+using UnityEngine.AI;
 using UnityEngine;
 using Constants;
 using UtilityFuncs;
@@ -56,6 +57,7 @@ public abstract class EnvManager : MonoBehaviour {
     public abstract void InitEnv();
 
     public virtual void Start() {
+        NavMesh.pathfindingIterationsPerFrame = 5000;
         Agents = new SimpleMultiAgentGroup();
         Util = GetComponent<Utils>();
         Init();
