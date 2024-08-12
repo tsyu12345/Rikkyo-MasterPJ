@@ -21,6 +21,7 @@ public class Evacuee : MonoBehaviour {
     public bool isFollowingDrone = false;
     public GameObject FollowTarget;
     public float TargetDistance;
+    public bool IsPathFind = false;
 
     private GameObject followedDrone = null;
     private List<string> excludeTowers;
@@ -29,6 +30,7 @@ public class Evacuee : MonoBehaviour {
     private string LogPrefix = "Evacuee: ";
     private NavMeshAgent navMeshAgent = null;
     private LineRenderer lineRenderer;
+    private GameObject destinationCache; // #47 毎ループSetDestinationを呼ぶのを防ぐ為、前回の目的地を保持するキャッシュを用意
     
 
     void Start() {
@@ -58,6 +60,8 @@ public class Evacuee : MonoBehaviour {
         if(FollowTarget != null) {
             Move();
         }
+        Debug.Log("PathPending" + navMeshAgent.pathPending);
+        IsPathFind = navMeshAgent.pathPending ? false : true; 
     }
 
     void FixedUpdate() {
@@ -103,15 +107,15 @@ public class Evacuee : MonoBehaviour {
     /// 目的地に向かって移動する
     /// </summary>
     private void Move() {
-        if(navMeshAgent == null) {
+        // #47 キャッシュした目的値と同じ場合は再度パス検索を行わない
+        if(navMeshAgent == null || destinationCache == FollowTarget || !_env.allEvacueesReady) {
             return;
         }
+        // キャッシュの更新処理
+        destinationCache = FollowTarget;
         Vector3 destination = new Vector3(FollowTarget.transform.position.x, transform.position.y, FollowTarget.transform.position.z);
         navMeshAgent.SetDestination(destination);
-        //TODO:進行方向を向く
-
     }
-
 
     private void SearchDrone() {
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, SearchRadius);
@@ -158,7 +162,6 @@ public class Evacuee : MonoBehaviour {
         return sortedTowers;
     }
 
-
     private void SendAddSignalForDrone(GameObject drone) {
         DroneNavAgent agent = drone.GetComponent<DroneNavAgent>();
         // 既に誘導中の場合は無視(リストに含まれている場合は無視)
@@ -168,7 +171,6 @@ public class Evacuee : MonoBehaviour {
         agent.currentGuidedEvacuees.Add(gameObject);
         agent.onAddEvacuee?.Invoke();
     }
-
 
     private void SendRemoveSignalForDrone(GameObject drone) {
         DroneNavAgent agent = drone.GetComponent<DroneNavAgent>();
