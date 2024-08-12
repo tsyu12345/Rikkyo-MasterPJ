@@ -57,7 +57,7 @@ public class PLATEAUEnvManager : EnvManager {
         RegisterTowers();
 
         // 全ての避難者のパス検索が終わるまで待機
-        StartCoroutine(WaitForAllEvacueesPathFind());
+        //StartCoroutine(WaitForAllEvacueesPathFind());
     }
 
     private IEnumerator WaitForAllEvacueesPathFind() {

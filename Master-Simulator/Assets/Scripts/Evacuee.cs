@@ -107,13 +107,7 @@ public class Evacuee : MonoBehaviour {
     /// 目的地に向かって移動する
     /// </summary>
     private void Move() {
-        // #47 キャッシュした目的値と同じ場合は再度パス検索を行わない
-        if(navMeshAgent == null || destinationCache == FollowTarget || !_env.allEvacueesReady) {
-            return;
-        }
-        // キャッシュの更新処理
-        destinationCache = FollowTarget;
-        Vector3 destination = new Vector3(FollowTarget.transform.position.x, transform.position.y, FollowTarget.transform.position.z);
+        Vector3 destination = new Vector3(FollowTarget.transform.localPosition.x, transform.localPosition.y, FollowTarget.transform.localPosition.z);
         navMeshAgent.SetDestination(destination);
     }
 

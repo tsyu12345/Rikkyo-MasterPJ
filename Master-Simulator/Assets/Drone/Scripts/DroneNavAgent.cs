@@ -35,7 +35,7 @@ public class DroneNavAgent : Agent {
         _controller = GetComponent<NavController>();
         _controller.PatrolRadius = patrolRadius;
         _env = GetComponentInParent<EnvManager>();
-        _env.Drones.Add(gameObject);
+        _env.Drones.Add(this.gameObject);
         _controller.RegisterTeam(gameObject.tag);
         _controller.onCrash += OnCrash;
         _env.OnEndEpisode += OnEndEpisodeHandler;
@@ -173,7 +173,7 @@ public class DroneNavAgent : Agent {
 
 
     private List<GameObject> GetOtherAgents() {
-        List<GameObject> drones = _env.Util.GetGameObjectsFromTagOnLocal(_env.gameObject, Tags.Agent);
+        GameObject[] drones = GameObject.FindGameObjectsWithTag(Tags.Agent);
         List<GameObject> otherAgents = new List<GameObject>();
         foreach(GameObject drone in drones) {
             if(drone != this.gameObject) {
