@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System;
 using Unity.MLAgents;
 using UnityEngine;
 using Constants;
@@ -45,17 +46,15 @@ public class PLATEAUEnvManager : EnvManager {
     public override void InitEnv() {
         DestroyEnv();
 
+        for(int i = 0; i < EvacueeSize; i++) {
+            SpawnEvacueeOnNavMesh();
+        }
+        RegisterTowers();
         RegisterAgents(Tags.Agent);
         foreach(var drone in Drones) {
             drone.SetActive(true);
         }
         
-        for(int i = 0; i < EvacueeSize; i++) {
-            SpawnEvacueeOnNavMesh();
-        }
-        
-        RegisterTowers();
-
         // 全ての避難者のパス検索が終わるまで待機
         //StartCoroutine(WaitForAllEvacueesPathFind());
     }
@@ -88,8 +87,10 @@ public class PLATEAUEnvManager : EnvManager {
     private void RegisterTowers() {
         Towers.Clear();
         var towers = GameObject.FindGameObjectsWithTag(Tags.Tower);
-        foreach(var tower in towers) {
-            Towers.Add(tower);
+        foreach(var towerObj in towers) {
+            Tower tower = towerObj.GetComponent<Tower>();
+            tower.uuid = Guid.NewGuid().ToString();
+            Towers.Add(towerObj);
         }
     }
 
@@ -120,7 +121,7 @@ public class PLATEAUEnvManager : EnvManager {
     }
 
     private Vector3 GetRandomPoint() {
-        Vector3 randomPoint = transform.position + Random.insideUnitSphere * EvacueeSpawnRadius;
+        Vector3 randomPoint = transform.position + UnityEngine.Random.insideUnitSphere * EvacueeSpawnRadius;
         randomPoint.y = transform.position.y; // 必要に応じて高さを調整
         return randomPoint;
     }
