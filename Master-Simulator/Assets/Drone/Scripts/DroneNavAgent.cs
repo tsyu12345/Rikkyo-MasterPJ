@@ -38,6 +38,7 @@ public class DroneNavAgent : Agent {
         _env.Drones.Add(this.gameObject);
         _controller.RegisterTeam(gameObject.tag);
         _controller.onCrash += OnCrash;
+        _controller.onEmptyBattery += OnBatteryEmpty;
         _env.OnEndEpisode += OnEndEpisodeHandler;
 
         // 初期位置を保存
@@ -121,7 +122,7 @@ public class DroneNavAgent : Agent {
         var currentTarget = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
 
         FlyMode = mode;
-        Target = mode == 2 ? _controller.Targets[currentTarget] : null;
+        Target = mode == 1 ? _controller.Targets[currentTarget] : null;
     }
 
     public override void Heuristic(in ActionBuffers actionsOut) {
@@ -139,6 +140,13 @@ public class DroneNavAgent : Agent {
     private void OnCrash(Vector3 position) {
         //SetReward(-1.0f);
         SetReward(-1f);
+        //エージェントグループからの登録を削除
+        _env.UnregisterAgent(this.gameObject);
+        gameObject.SetActive(false);
+    }
+
+    private void OnBatteryEmpty() {
+        // TODO:ドローンの充電ステーションを加えてみる
         //エージェントグループからの登録を削除
         _env.UnregisterAgent(this.gameObject);
         gameObject.SetActive(false);

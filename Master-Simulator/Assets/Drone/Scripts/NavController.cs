@@ -14,6 +14,7 @@ public class NavController : DroneController {
     public NavMeshAgent NavAgent;
     public List<GameObject> Targets = new List<GameObject>();
     public float PatrolRadius = 20f;
+    public bool PathFound = false;
     private LineRenderer lineRenderer;
 
     void Start() {
@@ -28,6 +29,10 @@ public class NavController : DroneController {
         lineRenderer.endWidth = 0.1f;
         lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
         lineRenderer.positionCount = 0;
+    }
+
+    void FixedUpdate() {
+        PathFound = NavAgent.pathPending? false : true;
     }
 
     public override void InHeuristicCtrl(in ActionBuffers actionsOut) {
@@ -46,13 +51,10 @@ public class NavController : DroneController {
 
         var flyMode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
 
-        var isWaitingMode = flyMode == 0;
-        var isSearchMode = flyMode == 1;
+        //var isWaitingMode = flyMode == 0;
+        var isSearchMode = flyMode == 0;
 
-        if(isWaitingMode) {
-            NavAgent.SetDestination(transform.position);
-            lineRenderer.positionCount = 0;
-        } else if(isSearchMode) {
+        if(isSearchMode) {
             SearchFlying(actions);
         } else  {
             Vector3 target = Targets[(int)NavAgentCtrlIndex.Destination].transform.position;

@@ -54,35 +54,8 @@ public class PLATEAUEnvManager : EnvManager {
         foreach(var drone in Drones) {
             drone.SetActive(true);
         }
-        
-        // 全ての避難者のパス検索が終わるまで待機
-        //StartCoroutine(WaitForAllEvacueesPathFind());
     }
 
-    private IEnumerator WaitForAllEvacueesPathFind() {
-        PathFindedEvacueeCount = 0;
-        loadingPanel.SetActive(true); // ローディング画面を表示
-        progressBar.value = 0; // プログレスバーをリセット
-
-        foreach (var evacuee in Evacuees) {
-            Evacuee evacueeComponent = evacuee.GetComponent<Evacuee>();
-
-            // パス検索が完了するまで待機
-            yield return new WaitUntil(() => evacueeComponent.IsPathFind);
-
-            PathFindedEvacueeCount++;
-            
-            // プログレスバーを更新
-            float progress = (float)PathFindedEvacueeCount / Evacuees.Count;
-            progressBar.value = progress;
-            // progressText.text = $"パス検索中: {(int)(progress * 100)}%";
-        }
-
-        // 全てのパス検索が完了したらローディング画面を非表示にする
-        loadingPanel.SetActive(false);
-        allEvacueesReady = true;
-        Debug.Log("All Evacuees PathFind is done.");
-    }
 
     private void RegisterTowers() {
         Towers.Clear();

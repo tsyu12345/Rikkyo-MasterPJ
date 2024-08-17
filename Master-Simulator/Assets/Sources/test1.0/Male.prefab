@@ -1050,6 +1050,7 @@ MonoBehaviour:
   isFollowingDrone: 0
   FollowTarget: {fileID: 0}
   TargetDistance: 0
+  IsPathFind: 0
 --- !u!136 &5176567995955276784
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1090,11 +1091,11 @@ NavMeshAgent:
   m_StoppingDistance: 0
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
-  m_AutoRepath: 1
+  m_AutoRepath: 0
   m_Height: 2
   m_BaseOffset: 1
   m_WalkableMask: 4294967295
-  m_ObstacleAvoidanceType: 4
+  m_ObstacleAvoidanceType: 1
 --- !u!120 &-4572803993482004672
 LineRenderer:
   serializedVersion: 2
