@@ -57,7 +57,7 @@ public abstract class EnvManager : MonoBehaviour {
     public abstract void InitEnv();
 
     public virtual void Start() {
-        NavMesh.pathfindingIterationsPerFrame = 5000;
+        NavMesh.pathfindingIterationsPerFrame = 10000; //#47 パス検索の最大イテレーション数を設定
         Agents = new SimpleMultiAgentGroup();
         Util = GetComponent<Utils>();
         Init();

@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 7577609265993313420}
   - component: {fileID: 748693423552692007}
   - component: {fileID: -7370073155237438483}
-  - component: {fileID: -297743744353202481}
   - component: {fileID: -1504754107748429912}
   - component: {fileID: 4240392082318304696}
   - component: {fileID: -309118238216707273}
@@ -66,7 +65,7 @@ NavMeshAgent:
   m_Height: 2
   m_BaseOffset: 15
   m_WalkableMask: 4294967295
-  m_ObstacleAvoidanceType: 4
+  m_ObstacleAvoidanceType: 0
 --- !u!114 &748693423552692007
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -113,35 +112,6 @@ MonoBehaviour:
   DecisionPeriod: 10
   DecisionStep: 0
   TakeActionsBetweenDecisions: 1
---- !u!114 &-297743744353202481
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 604094845460622734}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6bb6b867a41448888c1cd4f99643ad71, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_SensorName: ObstacleSensor
-  m_DetectableTags:
-  - Obstacle
-  m_RaysPerDirection: 3
-  m_MaxRayDegrees: 160
-  m_SphereCastRadius: 0.5
-  m_RayLength: 20
-  m_RayLayerMask:
-    serializedVersion: 2
-    m_Bits: 4294967291
-  m_ObservationStacks: 1
-  m_AlternatingRayOrder: 1
-  m_UseBatchedRaycasts: 0
-  rayHitColor: {r: 1, g: 0, b: 0, a: 1}
-  rayMissColor: {r: 1, g: 1, b: 1, a: 1}
-  m_StartVerticalOffset: 0
-  m_EndVerticalOffset: 0
 --- !u!54 &-1504754107748429912
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -340,6 +310,7 @@ MonoBehaviour:
   NavAgent: {fileID: 0}
   Targets: []
   PatrolRadius: 20
+  PathFound: 0
 --- !u!114 &2781278964088696420
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -386,13 +357,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4132943172782860169}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.49451253, y: -0.061601613, z: 0.027191035, w: 0.86655825}
+  m_LocalRotation: {x: 0.70560694, y: -0.04603159, z: 0.04603159, w: 0.70560694}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2647234978462192167}
-  m_LocalEulerAnglesHint: {x: 59.361, y: -9.017, z: -1.552}
+  m_LocalEulerAnglesHint: {x: 90, y: -9.017, z: -1.552}
 --- !u!114 &330948324367696176
 MonoBehaviour:
   m_ObjectHideFlags: 0

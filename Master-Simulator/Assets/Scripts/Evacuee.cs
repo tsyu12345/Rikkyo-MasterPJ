@@ -60,7 +60,6 @@ public class Evacuee : MonoBehaviour {
         if(FollowTarget != null) {
             Move();
         }
-        Debug.Log("PathPending" + navMeshAgent.pathPending);
         IsPathFind = navMeshAgent.pathPending ? false : true; 
     }
 
@@ -107,6 +106,11 @@ public class Evacuee : MonoBehaviour {
     /// 目的地に向かって移動する
     /// </summary>
     private void Move() {
+        if(destinationCache == FollowTarget) {
+            return;
+        } else {
+            destinationCache = FollowTarget;
+        }
         Vector3 destination = new Vector3(FollowTarget.transform.localPosition.x, transform.localPosition.y, FollowTarget.transform.localPosition.z);
         navMeshAgent.SetDestination(destination);
     }
