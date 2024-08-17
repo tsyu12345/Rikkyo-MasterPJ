@@ -327,7 +327,7 @@ MonoBehaviour:
     maxStep: 0
   hasUpgradedFromAgentParameters: 1
   MaxStep: 0
-  patrolRadius: 10
+  patrolRadius: 300
   currentGuidedEvacuees: []
   guidedCount: 0
   Target: {fileID: 0}
