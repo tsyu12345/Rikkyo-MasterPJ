@@ -12,11 +12,11 @@ using Constants;
 /// </summary>
 public class NavController : DroneController {
     public NavMeshAgent NavAgent;
+    public bool isArrivalTarget = false;
     public List<GameObject> Targets = new List<GameObject>();
     public float PatrolRadius = 20f;
     public bool PathFound = false;
     private LineRenderer lineRenderer;
-
     void Start() {
 
         base.Start();
@@ -33,6 +33,11 @@ public class NavController : DroneController {
 
     void FixedUpdate() {
         PathFound = NavAgent.pathPending? false : true;
+        if(PathFound && NavAgent.remainingDistance <= NavAgent.stoppingDistance) {
+            isArrivalTarget = true;
+        } else {
+            isArrivalTarget = false;
+        }
     }
 
     public override void InHeuristicCtrl(in ActionBuffers actionsOut) {

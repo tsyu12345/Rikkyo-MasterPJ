@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 2647234978462192167}
   - component: {fileID: 7577609265993313420}
   - component: {fileID: 748693423552692007}
-  - component: {fileID: -7370073155237438483}
   - component: {fileID: -1504754107748429912}
   - component: {fileID: 4240392082318304696}
   - component: {fileID: -309118238216707273}
@@ -97,21 +96,6 @@ MonoBehaviour:
   m_UseChildActuators: 1
   m_DeterministicInference: 0
   m_ObservableAttributeHandling: 0
---- !u!114 &-7370073155237438483
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 604094845460622734}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3a5c9d521e5ef4759a8246a07d52221e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  DecisionPeriod: 10
-  DecisionStep: 0
-  TakeActionsBetweenDecisions: 1
 --- !u!54 &-1504754107748429912
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -308,6 +292,7 @@ MonoBehaviour:
   Rbody: {fileID: 0}
   CommunicateTargetTags: []
   NavAgent: {fileID: 0}
+  isArrivalTarget: 0
   Targets: []
   PatrolRadius: 20
   PathFound: 0
