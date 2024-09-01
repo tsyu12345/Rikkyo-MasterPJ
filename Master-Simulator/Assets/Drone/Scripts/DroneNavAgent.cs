@@ -60,6 +60,7 @@ public class DroneNavAgent : Agent {
     void Update() {
         currentGuidingCount.text = currentGuidedEvacuees.Count.ToString();
         currentGoalCount.text = guidedCount.ToString();
+        
         if(_controller.isArrivalTarget) {
             RequestDecision();
         }
