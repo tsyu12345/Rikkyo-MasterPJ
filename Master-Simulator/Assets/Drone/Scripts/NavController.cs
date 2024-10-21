@@ -54,19 +54,19 @@ public class NavController : DroneController {
     public override void FlyingCtrl(ActionBuffers actions) {
         float speedInput = actions.ContinuousActions[(int)NavAgentCtrlIndex.Speed]; //速度の入力
         NavAgent.speed = speedInput * moveSpeed;
+        
 
-        var flyMode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
+        //var flyMode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
 
         //var isWaitingMode = flyMode == 0;
-        var isSearchMode = flyMode == 0;
-
+        //var isSearchMode = flyMode == 0;
+        /*
         if(isSearchMode) {
             SearchFlying(actions);
         } else  {
-            Vector3 target = Targets[(int)NavAgentCtrlIndex.Destination].transform.position;
-            NavAgent.SetDestination(target);
-            lineRenderer.positionCount = 0;
+
         }
+        */
     }
 
     /// <summary>

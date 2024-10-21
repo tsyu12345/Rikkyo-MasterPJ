@@ -89,7 +89,7 @@ public class DroneNavAgent : Agent {
         //自身の位置・速度を観測情報に追加
         sensor.AddObservation(transform.localPosition);
         sensor.AddObservation(_controller.NavAgent.speed);
-        sensor.AddObservation(FlyMode);
+        //sensor.AddObservation(FlyMode);
         sensor.AddObservation(Target == null ? Vector3.zero : Target.transform.localPosition);
         //現在誘導している避難者の数を観測情報に追加
         sensor.AddObservation(currentGuidedEvacuees.Count);
@@ -101,7 +101,7 @@ public class DroneNavAgent : Agent {
             // 他のドローンの選択している目的地と飛行モードを観測情報に追加
             var otherAgent = agent.GetComponent<DroneNavAgent>();
             sensor.AddObservation(otherAgent.currentGuidedEvacuees.Count);
-            sensor.AddObservation(otherAgent.FlyMode);
+            //sensor.AddObservation(otherAgent.FlyMode);
             sensor.AddObservation(otherAgent.Target == null ? Vector3.zero : otherAgent.Target.transform.localPosition);
         }
         
@@ -123,11 +123,12 @@ public class DroneNavAgent : Agent {
     public override void OnActionReceived(ActionBuffers actions) {
         _controller.FlyingCtrl(actions);
 
-        var mode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
-        var currentTarget = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
-
-        FlyMode = mode;
-        Target = mode == 1 ? _controller.Targets[currentTarget] : null;
+        //var mode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
+        var currentTargetIdx = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
+        Target = _env.Towers[currentTargetIdx];
+        _controller.NavAgent.SetDestination(Target.transform.position);
+        // FlyMode = mode;
+        //Target = mode == 1 ? _controller.Targets[currentTarget] : null;
     }
 
     public override void Heuristic(in ActionBuffers actionsOut) {
