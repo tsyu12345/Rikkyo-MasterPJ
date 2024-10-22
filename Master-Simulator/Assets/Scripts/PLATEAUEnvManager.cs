@@ -14,6 +14,9 @@ using TMPro;
 /// </summary>
 public class PLATEAUEnvManager : EnvManager {
 
+    [Header("#55 実験用パラメータ")]
+    public float[] EvacueeSpawnSizeRangePaeDrone = { 10.0f, 20.0f }; // ドローン1台あたりの避難者の数の範囲
+    //public bool OnlyEvacueeMode = false;
     [SerializeField]
     private List<GameObject> evacueesSpawnAreas;
     [SerializeField]
@@ -43,7 +46,9 @@ public class PLATEAUEnvManager : EnvManager {
 
     void OnDrawGizmos() {
         Gizmos.color = gizmoColor; // Gizmoの色を設定
-        Gizmos.DrawWireSphere(SpawnCenter, EvacueeSpawnRadius); // 中心から半径のワイヤーフレームの球体を描画
+        var yOffset = 10.0f;
+        Vector3 offsetSpawnCenter = new Vector3(SpawnCenter.x, SpawnCenter.y + yOffset, SpawnCenter.z); // Y座標をyOffset分上げる
+        Gizmos.DrawWireSphere(offsetSpawnCenter, EvacueeSpawnRadius); // 中心から半径のワイヤーフレームの球体を描画
     }
     public override void Start() {
         base.Start();
@@ -52,13 +57,24 @@ public class PLATEAUEnvManager : EnvManager {
     
     public override void InitEnv() {
         DestroyEnv();
-
+        /*
         for(int i = 0; i < EvacueeSize; i++) {
             SpawnEvacueeOnNavMesh();
         }
+        */
         RegisterTowers();
         RegisterAgents(Tags.Agent);
+        // TODO;ナビメッシュ上の有効なポイントにエージェントの位置を設定する
         foreach(var drone in Drones) {
+            drone.transform.localPosition = GetDronePosOnRandomNavMesh(drone);
+            // TODO: 指定した範囲で、ドローンの直下のナビメッシュ上に避難者を生成する
+            Vector3 spawnPos = drone.transform.localPosition;
+            spawnPos.y = transform.position.y;
+            var newEvacuee = Instantiate(Evacuee, spawnPos, Quaternion.identity);
+            Evacuees.Add(newEvacuee);
+            newEvacuee.transform.parent = transform;
+            newEvacuee.tag = Tags.Evacuee;
+            
             drone.SetActive(true);
         }
     }
@@ -93,6 +109,12 @@ public class PLATEAUEnvManager : EnvManager {
         Evacuees.Add(newEvacuee);
         newEvacuee.transform.parent = transform;
         newEvacuee.tag = Tags.Evacuee;
+    }
+
+    private Vector3 GetDronePosOnRandomNavMesh(GameObject drone) {
+        var spawnPos = GetRandomPositionOnNavMesh();
+        spawnPos.y = drone.transform.position.y;
+        return spawnPos;
     }
 
     /// <summary>
