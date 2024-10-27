@@ -16,6 +16,7 @@ public abstract class DroneController : MonoBehaviour {
     public float rotSpeed = 100f; // 回転速度
 
     [Header("Battery")]
+    public bool useBatterySimulation; // バッテリー消費の有無
     public float batteryLevel = 100f; // バッテリー残量の初期値
     private float batteryDrainRate = 1f; // 1秒あたりのバッテリー消費率
 
@@ -46,7 +47,9 @@ public abstract class DroneController : MonoBehaviour {
     protected void Start() {
         Rbody = GetComponent<Rigidbody>();
         //communicateArea.transform.localScale = new Vector3(communicationRange, communicationRange, communicationRange);
-        StartCoroutine(BatteryDrainCoroutine());
+        if(useBatterySimulation) {
+            StartCoroutine(BatteryDrainCoroutine());
+        }
     }
 
     void OnTriggerEnter(Collider other) {

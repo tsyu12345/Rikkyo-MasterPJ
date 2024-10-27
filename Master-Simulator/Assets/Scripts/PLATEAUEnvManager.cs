@@ -114,7 +114,7 @@ public class PLATEAUEnvManager : EnvManager {
 
     private Vector3 GetDronePosOnRandomNavMesh() {
         var spawnPos = GetRandomPositionOnNavMesh();
-        spawnPos.y = 10.46f;
+        spawnPos.y = transform.position.y;
         return spawnPos;
     }
 

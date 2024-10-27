@@ -54,7 +54,9 @@ public class NavController : DroneController {
     public override void FlyingCtrl(ActionBuffers actions) {
         float speedInput = actions.ContinuousActions[(int)NavAgentCtrlIndex.Speed]; //速度の入力
         NavAgent.speed = speedInput * moveSpeed;
-        
+        if(NavAgent.speed <= 0) { // エージェントが動かないケースは除外したいので速度補正を実施
+            NavAgent.speed = 1.0f; // 最低限の速度を設定
+        }
 
         //var flyMode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
 

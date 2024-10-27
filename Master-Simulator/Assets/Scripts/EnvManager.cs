@@ -77,13 +77,10 @@ public abstract class EnvManager : MonoBehaviour {
     void FixedUpdate() {
         m_ResetTimer += 1;
         EvacuationRate = CalcEvacuationRate();
-        
+        var remainAgents = Agents.GetRegisteredAgents();
         if (isEvacueeAll()) {
             OnEvacueeAll?.Invoke();
-        }
-        //残存するステップ数が制限時間に達した場合 or エージェントが全滅した場合、エピソードを終了
-        var remainAgents = Agents.GetRegisteredAgents();
-        if ((m_ResetTimer >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0) || remainAgents.Count < 1) {
+        } else if((m_ResetTimer >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0) || remainAgents.Count < 1) {
             OnEndEpisode?.Invoke(EvacuationRate);
         }
         UpdateUI();
@@ -108,7 +105,6 @@ public abstract class EnvManager : MonoBehaviour {
         
         foreach (GameObject agent in agents) {
             Agents.RegisterAgent(agent.GetComponent<Agent>());
-            agent.SetActive(true);
         }
     }
 
