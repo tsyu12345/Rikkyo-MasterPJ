@@ -23,8 +23,8 @@ namespace Constants {
         PosX  = 1,
         PosZ = 2,
         // DiscreteActions
-        FlyMode = 0,
-        Destination = 1,
+        //FlyMode = 0,
+        Destination = 0,
     }
 
     public enum DroneCtrlIndex {

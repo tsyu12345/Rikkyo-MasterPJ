@@ -13,9 +13,10 @@ using TMPro;
 /// 都市モデル環境用のスクリプト
 /// </summary>
 public class PLATEAUEnvManager : EnvManager {
-
     [Header("#55 実験用パラメータ")]
-    public float[] EvacueeSpawnSizeRangePaeDrone = { 10.0f, 20.0f }; // ドローン1台あたりの避難者の数の範囲
+
+    public int EvacueeSpawnSizePerDroneMin = 10;
+    public int EvacueeSpawnSizePerDroneMax = 20;
     //public bool OnlyEvacueeMode = false;
     [SerializeField]
     private List<GameObject> evacueesSpawnAreas;
@@ -37,11 +38,6 @@ public class PLATEAUEnvManager : EnvManager {
     public int EvacueeSpawnMaxAttempts = 30; // 最大試行回数
     public int EvacueeSize = 100; // 避難者の数
 
-    [Header("Loading UI")]
-    public GameObject loadingPanel; // ローディング画面のPanel
-    public Slider progressBar; // プログレスバー
-    //public TMP_Text progressText; // 進捗を示すテキスト
-
     private Color gizmoColor = Color.red; // エディタ上でスポーン範囲を示す線の色
 
     void OnDrawGizmos() {
@@ -52,29 +48,34 @@ public class PLATEAUEnvManager : EnvManager {
     }
     public override void Start() {
         base.Start();
-        loadingPanel.SetActive(false); // 最初はローディング画面を非表示
+        // NOTE: 一部の建物にNavMeshObstacleコンポーネントがアタッチされており、避難者が動けない場合がある問題への対処
+        GameObject[] allObjects = FindObjectsOfType<GameObject>();
+        foreach (var obj in allObjects) {
+            if (obj.name.StartsWith("bldg_") && obj.GetComponent<NavMeshObstacle>() != null) {
+                obj.GetComponent<NavMeshObstacle>().enabled = false;
+            }
+        }
     }
     
     public override void InitEnv() {
         DestroyEnv();
-        /*
-        for(int i = 0; i < EvacueeSize; i++) {
-            SpawnEvacueeOnNavMesh();
-        }
-        */
         RegisterTowers();
+        // エージェントの登録
         RegisterAgents(Tags.Agent);
-        // TODO;ナビメッシュ上の有効なポイントにエージェントの位置を設定する
+        Drones = new List<GameObject>(GameObject.FindGameObjectsWithTag(Tags.Agent));
         foreach(var drone in Drones) {
-            drone.transform.localPosition = GetDronePosOnRandomNavMesh(drone);
-            // TODO: 指定した範囲で、ドローンの直下のナビメッシュ上に避難者を生成する
+            // 赤円内のナビメッシュ上のランダムな位置にドローンを生成
+            drone.transform.position = GetDronePosOnRandomNavMesh(); //FIXME: NavMesh上から少しずれている？ "SetDestination" can only be called on an active agent that has been placed on a NavMesh.
+            
+            // このドローンの直下のナビメッシュ上に避難者を生成する
             Vector3 spawnPos = drone.transform.localPosition;
             spawnPos.y = transform.position.y;
-            var newEvacuee = Instantiate(Evacuee, spawnPos, Quaternion.identity);
-            Evacuees.Add(newEvacuee);
-            newEvacuee.transform.parent = transform;
-            newEvacuee.tag = Tags.Evacuee;
-            
+            for (int i = 0; i < UnityEngine.Random.Range(EvacueeSpawnSizePerDroneMin, EvacueeSpawnSizePerDroneMax); i++) {
+                var newEvacuee = Instantiate(Evacuee, spawnPos, Quaternion.identity);
+                Evacuees.Add(newEvacuee);
+                newEvacuee.transform.parent = transform;
+                newEvacuee.tag = Tags.Evacuee;
+            }
             drone.SetActive(true);
         }
     }
@@ -93,7 +94,7 @@ public class PLATEAUEnvManager : EnvManager {
     private void DestroyEnv() {
         RemoveObjectAll(Tags.Evacuee);
         foreach(var drone in Drones) {
-           UnregisterAgent(drone);
+            UnregisterAgent(drone);
         }
 
         Evacuees.Clear();
@@ -111,9 +112,9 @@ public class PLATEAUEnvManager : EnvManager {
         newEvacuee.tag = Tags.Evacuee;
     }
 
-    private Vector3 GetDronePosOnRandomNavMesh(GameObject drone) {
+    private Vector3 GetDronePosOnRandomNavMesh() {
         var spawnPos = GetRandomPositionOnNavMesh();
-        spawnPos.y = drone.transform.position.y;
+        spawnPos.y = 10.46f;
         return spawnPos;
     }
 

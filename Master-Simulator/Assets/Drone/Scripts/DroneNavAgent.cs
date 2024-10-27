@@ -173,7 +173,7 @@ public class DroneNavAgent : Agent {
     private void Reset() {
         //とりあえず、0地点にリセット
         transform.localRotation = Quaternion.Euler(0, 0, 0);
-        transform.localPosition = StartPos;
+        //transform.localPosition = StartPos;
         //Rbodyのパラメータをリセット
         _controller.Rbody.velocity = Vector3.zero;
         _controller.Rbody.useGravity = false;

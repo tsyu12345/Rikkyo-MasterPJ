@@ -100,6 +100,7 @@ public abstract class EnvManager : MonoBehaviour {
     public void UnregisterAgent(GameObject drone) {
         Agent agent = drone.GetComponent<Agent>();
         Agents.UnregisterAgent(agent);
+        //drone.SetActive(false);
     }
 
     protected void RegisterAgents(string agentTag) {
@@ -107,6 +108,7 @@ public abstract class EnvManager : MonoBehaviour {
         
         foreach (GameObject agent in agents) {
             Agents.RegisterAgent(agent.GetComponent<Agent>());
+            agent.SetActive(true);
         }
     }
 
