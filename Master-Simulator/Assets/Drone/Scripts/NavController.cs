@@ -33,7 +33,7 @@ public class NavController : DroneController {
 
     void FixedUpdate() {
         PathFound = NavAgent.pathPending? false : true;
-        
+        Debug.Log("Remain" + NavAgent.remainingDistance);
         if(PathFound && NavAgent.remainingDistance <= 1.0f) {
             isArrivalTarget = true;
         } else {

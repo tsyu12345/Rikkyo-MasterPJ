@@ -68,7 +68,7 @@ public class DroneNavAgent : Agent {
         currentGoalCount.text = guidedCount.ToString();
         
         if(_controller.isArrivalTarget) {
-            RequestDecision();
+            //RequestDecision();
         }
     }
 
