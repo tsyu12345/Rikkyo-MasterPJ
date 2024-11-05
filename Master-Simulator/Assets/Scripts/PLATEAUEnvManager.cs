@@ -77,9 +77,16 @@ public class PLATEAUEnvManager : EnvManager {
                 spawnPos.y = transform.position.y;
                 for (int i = 0; i < UnityEngine.Random.Range(EvacueeSpawnSizePerDroneMin, EvacueeSpawnSizePerDroneMax); i++) {
                     var newEvacuee = Instantiate(Evacuee, spawnPos, Quaternion.identity);
+                    Evacuee evacueeIns = newEvacuee.GetComponent<Evacuee>();
                     Evacuees.Add(newEvacuee);
                     newEvacuee.transform.parent = transform;
                     newEvacuee.tag = Tags.Evacuee;
+                    // 避難者の速度パラメータがランダムの場合、とそうでない時で処理を分ける
+                    if(base.EanbleEandmizeSpeedEvacuee) {
+                        evacueeIns.Speed = UnityEngine.Random.Range(base.EvacueeSpeedMin, base.EvacueeSpeedMax);
+                    } else {
+                        evacueeIns.Speed = base.ConstantEvacueeSpeed;
+                    }
                 }
                 drone.SetActive(true);
             }
