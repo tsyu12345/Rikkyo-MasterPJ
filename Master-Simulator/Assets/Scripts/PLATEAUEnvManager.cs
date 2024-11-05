@@ -53,6 +53,8 @@ public class PLATEAUEnvManager : EnvManager {
         foreach (var obj in allObjects) {
             if (obj.name.StartsWith("bldg_") && obj.GetComponent<NavMeshObstacle>() != null) {
                 obj.GetComponent<NavMeshObstacle>().enabled = false;
+            } else if(obj.CompareTag("TowerBldg") || obj.CompareTag("Tower")) {
+                obj.GetComponent<NavMeshObstacle>().enabled = false;
             }
         }
     }
@@ -81,14 +83,18 @@ public class PLATEAUEnvManager : EnvManager {
                     Evacuees.Add(newEvacuee);
                     newEvacuee.transform.parent = transform;
                     newEvacuee.tag = Tags.Evacuee;
-                    // 避難者の速度パラメータがランダムの場合、とそうでない時で処理を分ける
-                    if(base.EanbleEandmizeSpeedEvacuee) {
-                        evacueeIns.Speed = UnityEngine.Random.Range(base.EvacueeSpeedMin, base.EvacueeSpeedMax);
-                    } else {
-                        evacueeIns.Speed = base.ConstantEvacueeSpeed;
-                    }
                 }
                 drone.SetActive(true);
+            }
+        }
+
+        // 避難者の移動速度の設定
+        foreach (var evacuee in Evacuees) {
+            var eva = evacuee.GetComponent<Evacuee>();
+            if (base.EnableRandmizeSpeedEvacuee) {
+                eva.Speed = UnityEngine.Random.Range(base.EvacueeSpeedMin, base.EvacueeSpeedMax);
+            } else {
+                eva.Speed = base.ConstantEvacueeSpeed;
             }
         }
         

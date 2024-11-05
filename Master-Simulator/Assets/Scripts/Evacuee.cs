@@ -60,7 +60,8 @@ public class Evacuee : MonoBehaviour {
         if(FollowTarget != null) {
             Move();
         }
-        IsPathFind = navMeshAgent.pathPending ? false : true; 
+        IsPathFind = navMeshAgent.pathPending ? false : true;
+        navMeshAgent.speed = Speed;
     }
 
     void FixedUpdate() {

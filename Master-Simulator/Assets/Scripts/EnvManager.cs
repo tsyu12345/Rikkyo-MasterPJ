@@ -20,7 +20,7 @@ public abstract class EnvManager : MonoBehaviour {
     [Tooltip("エージェントを省いた単純な避難者のみのシミュレーションを行います")]
     public bool OnlyEvacuees = false;
     [Tooltip("避難者の速度をランダムに設定します。")]
-    public bool EanbleEandmizeSpeedEvacuee = false;
+    public bool EnableRandmizeSpeedEvacuee = false;
     public float EvacueeSpeedMin = 5.0f;
     public float EvacueeSpeedMax = 15.0f;
     public float ConstantEvacueeSpeed = 5.0f;

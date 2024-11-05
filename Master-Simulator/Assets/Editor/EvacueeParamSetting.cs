@@ -8,10 +8,10 @@ public class EvacueeControllerEditor : Editor
     {
         EnvManager controller = (EnvManager)target;
 
-        controller.EanbleEandmizeSpeedEvacuee = EditorGUILayout.Toggle("Enable Randomize Speed", controller.EanbleEandmizeSpeedEvacuee);
+        controller.EnableRandmizeSpeedEvacuee = EditorGUILayout.Toggle("Enable Randomize Speed", controller.EnableRandmizeSpeedEvacuee);
 
         // EanbleEandmizeSpeedEvacuee が true のときのみ EvacueeSpeedMin と EvacueeSpeedMax を表示
-        if (controller.EanbleEandmizeSpeedEvacuee)
+        if (controller.EnableRandmizeSpeedEvacuee)
         {
             controller.EvacueeSpeedMin = EditorGUILayout.FloatField("Evacuee Speed Min", controller.EvacueeSpeedMin);
             controller.EvacueeSpeedMax = EditorGUILayout.FloatField("Evacuee Speed Max", controller.EvacueeSpeedMax);

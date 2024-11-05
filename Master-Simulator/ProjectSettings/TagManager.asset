@@ -9,6 +9,7 @@ TagManager:
   - Agent
   - Tower
   - Evacuee
+  - TowerBldg
   layers:
   - Default
   - TransparentFX
