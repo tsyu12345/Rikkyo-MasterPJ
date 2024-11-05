@@ -35,6 +35,12 @@ public class DroneNavAgent : Agent {
         _controller = GetComponent<NavController>();
         _controller.PatrolRadius = patrolRadius;
         _env = GetComponentInParent<EnvManager>();
+
+        if(_env.OnlyEvacuees) {
+            this.gameObject.SetActive(false);
+            return;
+        }
+
         _env.Drones.Add(this.gameObject);
         _controller.RegisterTeam(gameObject.tag);
         _controller.onCrash += OnCrash;

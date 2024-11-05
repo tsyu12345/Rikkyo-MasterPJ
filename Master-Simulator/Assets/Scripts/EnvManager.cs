@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using Unity.MLAgents;
 using UnityEngine.AI;
 using UnityEngine;
@@ -8,12 +9,16 @@ using Constants;
 using UtilityFuncs;
 using UnityEngine.UI;
 using TMPro; 
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// 環境に関するスクリプトの管理
 /// その基底クラス 
 /// </summary>
 public abstract class EnvManager : MonoBehaviour {
+    [Header("SImulator Settings")]
+    [Tooltip("エージェントを省いた単純な避難者のみのシミュレーションを行います")]
+    public bool OnlyEvacuees = false;
 
     [Header("Environment Parameters")]
     public float EvacuationRate = 0.0f;
@@ -52,24 +57,44 @@ public abstract class EnvManager : MonoBehaviour {
     protected string LogPrefix = "EnvManager: ";
     protected int m_ResetTimer;
     protected delegate void SpawnCallback(GameObject obj);
+    private List<float> evacueeRateDatas = new List<float>();
+    private int currentEpisodeCount = 0;
+    private string dataSavePath = "Assets/Datas/";
 
     /** 抽象メソッド */
     public abstract void InitEnv();
 
     public virtual void Start() {
+        Drones = new List<GameObject>();
         NavMesh.pathfindingIterationsPerFrame = 10000; //#47 パス検索の最大イテレーション数を設定
-        Agents = new SimpleMultiAgentGroup();
+        if(!OnlyEvacuees) {
+            Agents = new SimpleMultiAgentGroup();
+        }
         Util = GetComponent<Utils>();
         Init();
 
         OnEvacueeAll += () => {
-            AddGroupReward();
-            Agents.EndGroupEpisode();
+            var type = OnlyEvacuees ? "EvacueesOnly" : "AgentsModel";
+            var fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_evacuationRate.csv";
+            SaveDatas(dataSavePath + fileName);
+            if(!OnlyEvacuees) {
+                AddGroupReward();
+                Agents.EndGroupEpisode();
+            }
+            currentEpisodeCount++;
+            evacueeRateDatas.Clear();
             Init();
         };
         OnEndEpisode += (float evacueeRate) => {
-            AddGroupReward();
-            Agents.GroupEpisodeInterrupted();
+            var type = OnlyEvacuees ? "EvacueesOnly" : "AgentsModel";
+            var fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_evacuationRate.csv";
+            SaveDatas(dataSavePath + fileName);
+            if(!OnlyEvacuees) {
+                AddGroupReward();
+                Agents.GroupEpisodeInterrupted();
+            }
+            currentEpisodeCount++;
+            evacueeRateDatas.Clear();
             Init();
         };
     }
@@ -77,12 +102,21 @@ public abstract class EnvManager : MonoBehaviour {
     void FixedUpdate() {
         m_ResetTimer += 1;
         EvacuationRate = CalcEvacuationRate();
-        var remainAgents = Agents.GetRegisteredAgents();
-        if (isEvacueeAll()) {
+        evacueeRateDatas.Add(EvacuationRate); // 1step毎に計測
+
+        bool allEvacuees = isEvacueeAll();
+        bool shouldEndEpisode = (m_ResetTimer >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0);
+        if (allEvacuees) {
             OnEvacueeAll?.Invoke();
-        } else if((m_ResetTimer >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0) || remainAgents.Count < 1) {
+        } else if (!OnlyEvacuees) {
+            var remainAgents = Agents.GetRegisteredAgents();
+            if (remainAgents.Count < 1 || shouldEndEpisode) {
+                OnEndEpisode?.Invoke(EvacuationRate);
+            }
+        } else if (shouldEndEpisode) {
             OnEndEpisode?.Invoke(EvacuationRate);
         }
+
         UpdateUI();
     }
 
@@ -158,7 +192,7 @@ public abstract class EnvManager : MonoBehaviour {
             int currentRate = (int)(EvacuationRate * 100);
             evacRateCounter.text = $"Rate : {currentRate}%";
         }
-        if (remainAgentsCounter != null) {
+        if (remainAgentsCounter != null && !OnlyEvacuees) {
             remainAgentsCounter.text = $"Remain Agents : {Agents.GetRegisteredAgents().Count}";
         }
     }
@@ -176,6 +210,18 @@ public abstract class EnvManager : MonoBehaviour {
 
     private void AddGroupReward() {
         Agents.SetGroupReward(AgentGuidedCount);
+    }
+
+    private void SaveDatas(string filePath) {
+        using (StreamWriter writer = new StreamWriter(filePath)) {
+            // 以下に記録したいデータを記述
+            writer.WriteLine("Evacuation Rate, Time");
+            for(int i = 0; i < evacueeRateDatas.Count; i++) { 
+                writer.WriteLine($"{evacueeRateDatas[i]}, {i}");
+            }
+            writer.Close();
+            Debug.Log($"Data saved to {filePath}");
+        }
     }
 
 }
