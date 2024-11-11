@@ -68,7 +68,7 @@ public class DroneNavAgent : Agent {
         currentGoalCount.text = guidedCount.ToString();
         
         if(_controller.isArrivalTarget) {
-            //RequestDecision();
+            RequestDecision();
         }
     }
 
@@ -127,12 +127,12 @@ public class DroneNavAgent : Agent {
     /// 3. 目的地選択 - 離散値
     /// <param name="actions"></param>
     public override void OnActionReceived(ActionBuffers actions) {
-        _controller.FlyingCtrl(actions);
-
-        //var mode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
         var currentTargetIdx = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
         Target = _env.Towers[currentTargetIdx];
         _controller.NavAgent.SetDestination(Target.transform.position);
+        _controller.FlyingCtrl(actions);
+
+        //var mode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
         // FlyMode = mode;
         //Target = mode == 1 ? _controller.Targets[currentTarget] : null;
     }

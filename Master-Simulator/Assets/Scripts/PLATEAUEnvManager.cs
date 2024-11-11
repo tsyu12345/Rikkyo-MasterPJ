@@ -72,8 +72,7 @@ public class PLATEAUEnvManager : EnvManager {
             Drones = new List<GameObject>(GameObject.FindGameObjectsWithTag(Tags.Agent));
             foreach(var drone in Drones) {
                 // 赤円内のナビメッシュ上のランダムな位置にドローンを生成
-                drone.transform.position = GetDronePosOnRandomNavMesh(); //FIXME: NavMesh上から少しずれている？ "SetDestination" can only be called on an active agent that has been placed on a NavMesh.
-                
+                drone.transform.position = GetDronePosOnRandomNavMesh();
                 // このドローンの直下のナビメッシュ上に避難者を生成する
                 Vector3 spawnPos = drone.transform.localPosition;
                 spawnPos.y = transform.position.y;

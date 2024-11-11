@@ -71,7 +71,7 @@ public abstract class EnvManager : MonoBehaviour {
     public abstract void InitEnv();
 
     public virtual void Start() {
-        Drones = new List<GameObject>();
+        //Drones = new List<GameObject>();
         NavMesh.pathfindingIterationsPerFrame = 10000; //#47 パス検索の最大イテレーション数を設定
         if(!OnlyEvacuees) {
             Agents = new SimpleMultiAgentGroup();
@@ -148,6 +148,7 @@ public abstract class EnvManager : MonoBehaviour {
         
         foreach (GameObject agent in agents) {
             Agents.RegisterAgent(agent.GetComponent<Agent>());
+            agent.SetActive(true);
         }
     }
 
