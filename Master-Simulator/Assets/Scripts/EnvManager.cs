@@ -29,13 +29,9 @@ public abstract class EnvManager : MonoBehaviour {
     [Header("Environment Parameters")]
     public float EvacuationRate = 0.0f;
     [Tooltip("Max Environment Steps")] public int MaxEnvironmentSteps = 1000; 
-    /**避難者の設定*/
-    public int MinEvacueeCount = 1;
-    public int MaxEvacueeCount = 10;
 
     [Header("GameObjects")]
     public GameObject Evacuee;
-    public abstract List<GameObject> EvacueesSpawnAreas { get; set; }
 
     [Header("Objects")]
     public List<GameObject> Drones;

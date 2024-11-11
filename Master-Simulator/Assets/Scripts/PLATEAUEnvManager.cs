@@ -20,22 +20,10 @@ public class PLATEAUEnvManager : EnvManager {
     //public bool OnlyEvacueeMode = false;
     [SerializeField]
     private List<GameObject> evacueesSpawnAreas;
-    [SerializeField]
-    private int PathFindedEvacueeCount = 0;
-
-    public override List<GameObject> EvacueesSpawnAreas {
-        get {
-            return evacueesSpawnAreas;
-        }
-        set { 
-            evacueesSpawnAreas = value;
-        }
-    }
 
     [Header("Evacuees Spawn Settings")]
     public float EvacueeSpawnRadius = 10.0f; // ランダム生成範囲の半径
     public Vector3 SpawnCenter = Vector3.zero; // スポーンエリアの中心位置
-    public int EvacueeSpawnMaxAttempts = 30; // 最大試行回数
     public int EvacueeSize = 100; // 避難者の数
 
     private Color gizmoColor = Color.red; // エディタ上でスポーン範囲を示す線の色
@@ -74,13 +62,14 @@ public class PLATEAUEnvManager : EnvManager {
                 // 赤円内のナビメッシュ上のランダムな位置にドローンを生成
                 drone.transform.position = GetDronePosOnRandomNavMesh();
                 // このドローンの直下のナビメッシュ上に避難者を生成する
-                Vector3 spawnPos = drone.transform.localPosition;
+                Vector3 spawnPos = drone.transform.position;
                 spawnPos.y = transform.position.y;
                 for (int i = 0; i < UnityEngine.Random.Range(EvacueeSpawnSizePerDroneMin, EvacueeSpawnSizePerDroneMax); i++) {
                     var newEvacuee = Instantiate(Evacuee, spawnPos, Quaternion.identity);
+                    newEvacuee.transform.position = drone.transform.localPosition;
+                    newEvacuee.transform.parent = transform;
                     Evacuee evacueeIns = newEvacuee.GetComponent<Evacuee>();
                     Evacuees.Add(newEvacuee);
-                    newEvacuee.transform.parent = transform;
                     newEvacuee.tag = Tags.Evacuee;
                 }
                 drone.SetActive(true);

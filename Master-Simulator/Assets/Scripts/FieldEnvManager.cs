@@ -22,7 +22,7 @@ public class FieldEnvManager : EnvManager {
     public int MaxObstacleCount = 1;
     public int MinObstacleCount = 1;
     [Header("GameObjects")]
-    public override List<GameObject> EvacueesSpawnAreas { 
+    public List<GameObject> EvacueesSpawnAreas { 
         get {
             return EvacueesSpawnAreas;
         }
@@ -34,6 +34,8 @@ public class FieldEnvManager : EnvManager {
     public GameObject TowerSpawn;
     public GameObject ObstacleWall;
     public GameObject Aisle;
+    public int MaxEvacueeCount;
+    public int MinEvacueeCount = 1;
     
     public override void InitEnv() {
         RemoveObjectAll(Tags.Tower);

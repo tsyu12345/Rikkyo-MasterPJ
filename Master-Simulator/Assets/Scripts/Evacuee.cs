@@ -46,7 +46,7 @@ public class Evacuee : MonoBehaviour {
         lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
         lineRenderer.positionCount = 0;
 
-        transform.position = new Vector3(transform.position.x, 1.5f, transform.position.z);
+        //transform.position = new Vector3(transform.position.x, 1.5f, transform.position.z);
     }
     
     void Update() {
