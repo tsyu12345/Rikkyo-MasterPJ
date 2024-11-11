@@ -28,12 +28,11 @@ public class Evacuee : MonoBehaviour {
 
     private EnvManager _env;
     private string LogPrefix = "Evacuee: ";
-    private NavMeshAgent navMeshAgent = null;
+    public NavMeshAgent navMeshAgent = null;
     private LineRenderer lineRenderer;
-    private GameObject destinationCache; // #47 毎ループSetDestinationを呼ぶのを防ぐ為、前回の目的地を保持するキャッシュを用意
     
 
-    void Start() {
+    void Awake() {
         //デフォルトでは自身の1つ上の親オブジェクトをフィールドとして設定
         Field = transform.parent.gameObject;
         _env = Field.GetComponent<EnvManager>();
@@ -50,13 +49,20 @@ public class Evacuee : MonoBehaviour {
     }
     
     void Update() {
-        SearchDrone();
-        if(!isFollowingDrone || FollowTarget == null) {
-            List<GameObject> towers = SearchTowers(excludeTowers);
-            if(towers.Count > 0) {
-                FollowTarget = towers[0]; //最短距離のタワーを目標に設定
+        
+        if(_env.OnlyEvacuees) {
+            SearchDroneInRange();
+            if(!isFollowingDrone || FollowTarget == null) { //NOTE : #55 MTG 誘導モデルの場合、避難者は常にドローンを追尾する
+                List<GameObject> towers = SearchTowers(excludeTowers);
+                if(towers.Count > 0) {
+                    FollowTarget = towers[0]; //最短距離のタワーを目標に設定
+                }
             }
+        } else {
+            TrackingDrone();
         }
+
+
         if(FollowTarget != null) {
             Move();
         }
@@ -107,16 +113,11 @@ public class Evacuee : MonoBehaviour {
     /// 目的地に向かって移動する
     /// </summary>
     private void Move() {
-        if(destinationCache == FollowTarget) {
-            return;
-        } else {
-            destinationCache = FollowTarget;
-        }
         Vector3 destination = new Vector3(FollowTarget.transform.localPosition.x, transform.localPosition.y, FollowTarget.transform.localPosition.z);
         navMeshAgent.SetDestination(destination);
     }
 
-    private void SearchDrone() {
+    private void SearchDroneInRange() {
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, SearchRadius);
         foreach (var hitCollider in hitColliders) {
             if (hitCollider.CompareTag(Tags.Agent)) {
@@ -132,13 +133,33 @@ public class Evacuee : MonoBehaviour {
                 return;
             }
         }
-        
+        // 探知圏外
         isFollowingDrone = false;
         FollowTarget = null;
         if(followedDrone != null) {
             SendRemoveSignalForDrone(followedDrone);
             followedDrone = null;
         }
+    }
+
+    private void TrackingDrone() {
+        // 最短距離のドローンを探す
+        GameObject[] agents = GameObject.FindGameObjectsWithTag(Tags.Agent);
+        List<GameObject> sortedAgents = new List<GameObject>();
+        foreach (var agent in agents) {
+            sortedAgents.Add(agent);
+        }
+        sortedAgents.Sort((a, b) => Vector3.Distance(a.transform.position, transform.position).CompareTo(Vector3.Distance(b.transform.position, transform.position)));
+        
+        FollowTarget = sortedAgents[0];
+        isFollowingDrone = true;
+        if(followedDrone != null) { //前に追跡していたドローンがいた場合、リストから削除
+            SendRemoveSignalForDrone(followedDrone);
+        }
+        // 直前の追跡ドローンを更新
+        followedDrone = sortedAgents[0];
+        HidePath();
+        SendAddSignalForDrone(followedDrone);
     }
     
     /// <summary>

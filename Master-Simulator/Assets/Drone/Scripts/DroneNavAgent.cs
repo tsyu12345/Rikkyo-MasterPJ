@@ -23,7 +23,7 @@ public class DroneNavAgent : Agent {
     private TextMeshPro currentGoalCount;
     
     private EnvManager _env;
-    private NavController _controller;
+    public NavController _controller;
     private Vector3 StartPos;
 
     private string LogPrefix = "DroneAgent: ";
@@ -49,7 +49,7 @@ public class DroneNavAgent : Agent {
 
         // 初期位置を保存
         StartPos = transform.localPosition;
-
+        Debug.Log("StartPos: " + StartPos);
         currentGuidingCount = transform.Find("GuidingCounter").GetComponent<TextMeshPro>();
         currentGoalCount = transform.Find("GuidedCounter").GetComponent<TextMeshPro>();
 

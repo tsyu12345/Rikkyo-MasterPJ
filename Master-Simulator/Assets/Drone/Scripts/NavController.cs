@@ -12,6 +12,8 @@ using Constants;
 /// </summary>
 public class NavController : DroneController {
     public NavMeshAgent NavAgent;
+    [Tooltip("移動速度の最小値。エージェントがスピード値を0以下にすることがあるので、その時の最低移動速度を設定")]
+    public float MinimumSpeed = 6.0f;
     public bool isArrivalTarget = false;
     public List<GameObject> Targets = new List<GameObject>();
     public float PatrolRadius = 20f;
@@ -22,7 +24,7 @@ public class NavController : DroneController {
         base.Start();
 
         NavAgent = GetComponent<NavMeshAgent>();
-        NavAgent.autoBraking = false;
+        //NavAgent.autoBraking = false;
 
         lineRenderer = GetComponent<LineRenderer>();
         lineRenderer.startWidth = 0.1f;
@@ -55,7 +57,7 @@ public class NavController : DroneController {
         float speedInput = actions.ContinuousActions[(int)NavAgentCtrlIndex.Speed]; //速度の入力
         NavAgent.speed = speedInput * moveSpeed;
         if(NavAgent.speed <= 0) { // エージェントが動かないケースは除外したいので速度補正を実施
-            NavAgent.speed = 1.0f; // 最低限の速度を設定
+            NavAgent.speed = MinimumSpeed;
         }
 
         //var flyMode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];

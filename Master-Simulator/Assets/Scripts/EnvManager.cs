@@ -216,6 +216,7 @@ public abstract class EnvManager : MonoBehaviour {
 
     private void AddGroupReward() {
         Agents.SetGroupReward(AgentGuidedCount);
+        Agents.AddGroupReward(EvacuationRate);
     }
 
     private void SaveDatas(string filePath) {

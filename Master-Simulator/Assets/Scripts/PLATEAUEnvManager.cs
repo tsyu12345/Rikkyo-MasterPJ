@@ -61,18 +61,35 @@ public class PLATEAUEnvManager : EnvManager {
             foreach(var drone in Drones) {
                 // 赤円内のナビメッシュ上のランダムな位置にドローンを生成
                 drone.transform.position = GetDronePosOnRandomNavMesh();
+                NavController agentController = drone.GetComponent<NavController>();
                 // このドローンの直下のナビメッシュ上に避難者を生成する
                 Vector3 spawnPos = drone.transform.position;
-                spawnPos.y = transform.position.y;
+                Debug.Log("Drone Pos: " + spawnPos);
+                spawnPos.y = 1.5f; // 避難者の高さを設定
+                Vector3 CalibrationPos = new Vector3(spawnPos.x, spawnPos.y, spawnPos.z);
                 for (int i = 0; i < UnityEngine.Random.Range(EvacueeSpawnSizePerDroneMin, EvacueeSpawnSizePerDroneMax); i++) {
-                    var newEvacuee = Instantiate(Evacuee, spawnPos, Quaternion.identity);
-                    newEvacuee.transform.position = drone.transform.localPosition;
-                    newEvacuee.transform.parent = transform;
+                    var newEvacuee = Instantiate(Evacuee, spawnPos, Quaternion.identity, transform);
+                    Debug.Log("Evacuee Pos: " + newEvacuee.transform.position); //NOTE: この時点での位置はエージェントと一致している
                     Evacuee evacueeIns = newEvacuee.GetComponent<Evacuee>();
+                    var isCompleteWarp = evacueeIns.navMeshAgent.Warp(spawnPos);
+                    if (!isCompleteWarp) {
+                        Debug.LogError("Failed to warp evacuee to drone position");
+                        // Sampleを使って再度位置を取得
+                        if (NavMesh.SamplePosition(spawnPos, out NavMeshHit hit, 1.0f, NavMesh.AllAreas)) {
+                            newEvacuee.transform.position = hit.position;
+                        } else {
+                            Debug.LogWarning("避難者がNavMesh上に生成できませんでした。位置を確認してください。");
+                        }
+                    }
                     Evacuees.Add(newEvacuee);
                     newEvacuee.tag = Tags.Evacuee;
+                    CalibrationPos = newEvacuee.transform.position;
                 }
                 drone.SetActive(true);
+                // NOTE: #60-何故か生成後にエージェントの位置が避難者のところにいないことがあるので、ここで補正する。
+                // スポーンした避難者の位置にドローンを移動させる
+                agentController.NavAgent.Warp(CalibrationPos);
+
             }
         }
 
