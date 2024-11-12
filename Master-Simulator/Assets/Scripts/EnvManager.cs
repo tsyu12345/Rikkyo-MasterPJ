@@ -19,6 +19,8 @@ public abstract class EnvManager : MonoBehaviour {
     [Header("SImulator Settings")]
     [Tooltip("エージェントを省いた単純な避難者のみのシミュレーションを行います")]
     public bool OnlyEvacuees = false;
+    [Tooltip("モデルトレーニングを行うかどうか")]
+    public bool modelTrain = false;
     [Tooltip("避難者の速度をランダムに設定します。")]
     public bool EnableRandmizeSpeedEvacuee = false;
     public float EvacueeSpeedMin = 5.0f;
@@ -48,7 +50,7 @@ public abstract class EnvManager : MonoBehaviour {
 
     public Utils Util;
 
-    public delegate void EvacueeAllHandler();
+    public delegate void EvacueeAllHandler(float evacueeRate);
     public EvacueeAllHandler OnEvacueeAll;
     public delegate void EndEpisodeHandler(float evacueeRate);
     public EndEpisodeHandler OnEndEpisode;
@@ -85,7 +87,7 @@ public abstract class EnvManager : MonoBehaviour {
         bool allEvacuees = isEvacueeAll();
         bool shouldEndEpisode = m_ResetTimer >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0;
         if (allEvacuees) {
-            OnEvacueeAll?.Invoke();
+            OnEvacueeAll?.Invoke(EvacuationRate);
         } else if (!OnlyEvacuees) {
             var remainAgents = Agents.GetRegisteredAgents();
             if (remainAgents.Count < 1 || shouldEndEpisode) {
@@ -113,11 +115,18 @@ public abstract class EnvManager : MonoBehaviour {
     }
 
     private void SetEpisodeEndHandlers() {
-        OnEvacueeAll += () => {
+        OnEvacueeAll += (float evacueeRate) => {
             var type = OnlyEvacuees ? "EvacueesOnly" : "AgentsModel";
             var fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_evacuationRate.csv";
-            SaveDatas(dataSavePath + fileName);
+            if(!modelTrain) {
+                SaveDatas(dataSavePath + fileName);
+            }
             if(!OnlyEvacuees) {
+                // エージェントのエピソード終了処理を発行
+                foreach(GameObject drone in Drones) {
+                    var agent = drone.GetComponent<DroneNavAgent>();
+                    agent.OnEndEpisodeHandler(evacueeRate);
+                }
                 AddGroupReward();
                 Agents.EndGroupEpisode();
             }
@@ -128,8 +137,15 @@ public abstract class EnvManager : MonoBehaviour {
         OnEndEpisode += (float evacueeRate) => {
             var type = OnlyEvacuees ? "EvacueesOnly" : "AgentsModel";
             var fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_evacuationRate.csv";
-            SaveDatas(dataSavePath + fileName);
+            if(!modelTrain) {
+                SaveDatas(dataSavePath + fileName);
+            }
             if(!OnlyEvacuees) {
+                // エージェントのエピソード終了処理を発行
+                foreach(GameObject drone in Drones) {
+                    var agent = drone.GetComponent<DroneNavAgent>();
+                    agent.OnEndEpisodeHandler(evacueeRate);
+                }
                 AddGroupReward();
                 Agents.GroupEpisodeInterrupted();
             }

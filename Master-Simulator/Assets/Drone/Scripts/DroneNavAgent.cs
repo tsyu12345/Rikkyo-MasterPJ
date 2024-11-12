@@ -45,7 +45,7 @@ public class DroneNavAgent : Agent {
         _controller.RegisterTeam(gameObject.tag);
         _controller.onCrash += OnCrash;
         _controller.onEmptyBattery += OnBatteryEmpty;
-        _env.OnEndEpisode += OnEndEpisodeHandler;
+        //_env.OnEndEpisode += OnEndEpisodeHandler;
 
         // 初期位置を保存
         StartPos = transform.localPosition;
@@ -164,7 +164,7 @@ public class DroneNavAgent : Agent {
         gameObject.SetActive(false);
     }
 
-    private void OnEndEpisodeHandler(float evacueeRate) {
+    public void OnEndEpisodeHandler(float evacueeRate) {
         if(guidedCount > 0) {
             SetReward(guidedCount);
             _env.AgentGuidedCount += guidedCount;
