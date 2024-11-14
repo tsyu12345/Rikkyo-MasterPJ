@@ -33,10 +33,6 @@ public class Evacuee : MonoBehaviour {
     
 
     void Awake() {
-        //デフォルトでは自身の1つ上の親オブジェクトをフィールドとして設定
-        Field = transform.parent.gameObject;
-        _env = Field.GetComponent<EnvManager>();
-        excludeTowers = new List<string>();
         navMeshAgent = GetComponent<NavMeshAgent>();
         navMeshAgent.speed = Speed;
         lineRenderer = GetComponent<LineRenderer>();
@@ -46,6 +42,13 @@ public class Evacuee : MonoBehaviour {
         lineRenderer.positionCount = 0;
 
         //transform.position = new Vector3(transform.position.x, 1.5f, transform.position.z);
+    }
+
+    void Start() {
+        //デフォルトでは自身の1つ上の親オブジェクトをフィールドとして設定
+        Field = transform.parent.gameObject;
+        _env = Field.GetComponent<EnvManager>();
+        excludeTowers = new List<string>();
     }
     
     void Update() {
