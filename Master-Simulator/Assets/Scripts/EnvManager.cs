@@ -19,6 +19,8 @@ public abstract class EnvManager : MonoBehaviour {
     [Header("SImulator Settings")]
     [Tooltip("エージェントを省いた単純な避難者のみのシミュレーションを行います")]
     public bool OnlyEvacuees = false;
+    [Tooltip("避難者の位置をランダムに指定するか否か")]
+    public bool RandomizeEvacueePosition = false;
     [Tooltip("モデルトレーニングを行うかどうか")]
     public bool modelTrain = false;
     [Tooltip("避難者の速度をランダムに設定します。")]
@@ -71,7 +73,7 @@ public abstract class EnvManager : MonoBehaviour {
     public virtual void Start() {
         //Drones = new List<GameObject>();
         NavMesh.pathfindingIterationsPerFrame = 10000; //#47 パス検索の最大イテレーション数を設定
-        if(!OnlyEvacuees) {
+        if(!OnlyEvacuees && RandomizeEvacueePosition) { // 避難者のみ & 位置ランダムの場合はエージェント不要
             Agents = new SimpleMultiAgentGroup();
         }
         Util = GetComponent<Utils>();

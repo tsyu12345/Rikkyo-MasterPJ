@@ -50,10 +50,35 @@ public class PLATEAUEnvManager : EnvManager {
     public override void InitEnv() {
         DestroyEnv();
         RegisterTowers();
-        if(base.OnlyEvacuees) {
+        if(base.OnlyEvacuees && base.RandomizeEvacueePosition) {
             for(int i = 0; i < EvacueeSize; i++) {
                 // 赤円内のナビメッシュ上のランダムな位置に避難者を生成
                 SpawnEvacueeOnNavMesh();
+            }
+        } else if(base.OnlyEvacuees && !base.RandomizeEvacueePosition) {
+            // 仮想的にエージェントの生成位置を計算し、その配下に避難者グループを形成させる。
+            foreach(var drone in base.Drones) {
+                var virtualDronePos = GetDronePosOnRandomNavMesh();
+                Vector3 spawnPos = virtualDronePos;
+                spawnPos.y = 1.5f; // 避難者の高さを設定
+                for (int i = 0; i < UnityEngine.Random.Range(EvacueeSpawnSizePerDroneMin, EvacueeSpawnSizePerDroneMax); i++) {
+                    var newEvacuee = Instantiate(Evacuee, spawnPos, Quaternion.identity, transform);
+                    Evacuee evacueeIns = newEvacuee.GetComponent<Evacuee>();
+                    var isCompleteWarp = evacueeIns.navMeshAgent.Warp(spawnPos);
+                    if (!isCompleteWarp) {
+                        Debug.LogError("Failed to warp evacuee to drone position");
+                        // Sampleを使って再度位置を取得
+                        if (NavMesh.SamplePosition(spawnPos, out NavMeshHit hit, 1.0f, NavMesh.AllAreas)) {
+                            newEvacuee.transform.position = hit.position;
+                        } else {
+                            Debug.LogWarning("避難者がNavMesh上に生成できませんでした。位置を確認してください。");
+                        }
+                    }
+                    Evacuees.Add(newEvacuee);
+                    newEvacuee.tag = Tags.Evacuee;
+                    Vector3 CalibrationPos = new Vector3(spawnPos.x, spawnPos.y, spawnPos.z);
+                    CalibrationPos = newEvacuee.transform.position;
+                }
             }
         } else {
             RegisterAgents(Tags.Agent);
@@ -64,7 +89,6 @@ public class PLATEAUEnvManager : EnvManager {
                 NavController agentController = drone.GetComponent<NavController>();
                 // このドローンの直下のナビメッシュ上に避難者を生成する
                 Vector3 spawnPos = drone.transform.position;
-                Debug.Log("Drone Pos: " + spawnPos);
                 spawnPos.y = 1.5f; // 避難者の高さを設定
                 Vector3 CalibrationPos = new Vector3(spawnPos.x, spawnPos.y, spawnPos.z);
                 for (int i = 0; i < UnityEngine.Random.Range(EvacueeSpawnSizePerDroneMin, EvacueeSpawnSizePerDroneMax); i++) {
@@ -120,7 +144,9 @@ public class PLATEAUEnvManager : EnvManager {
         RemoveObjectAll(Tags.Evacuee);
         
         foreach(var drone in Drones) {
-            UnregisterAgent(drone);
+            if(!base.OnlyEvacuees) {
+                UnregisterAgent(drone);
+            }
         }
 
         Evacuees.Clear();
