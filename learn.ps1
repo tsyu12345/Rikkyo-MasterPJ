@@ -6,7 +6,7 @@ param(
 )
 
 $configurePath = "Master-Simulator\config\test1_0_nav.yaml"
-$exePath = "Master-Simulator\build2\Master-Simulator.exe"
+$exePath = "Master-Simulator\build\Master-Simulator.exe"
 
 if($exe) {
     if($force) {
