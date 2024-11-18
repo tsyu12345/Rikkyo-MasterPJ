@@ -24,6 +24,11 @@ public class Tower : MonoBehaviour{
 
     private EnvManager _env;
 
+    void Awake() {
+        // 受け入れ可能数の初期値を設定
+        currentCapacity = MaxCapacity;
+    }
+
     void Start() {
         ExMark = transform.Find("ExMark").GetComponent<MeshRenderer>();
         ExMark.enabled = false;

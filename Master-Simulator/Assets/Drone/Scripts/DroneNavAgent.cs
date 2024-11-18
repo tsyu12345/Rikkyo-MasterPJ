@@ -49,12 +49,10 @@ public class DroneNavAgent : Agent {
 
         // 初期位置を保存
         StartPos = transform.localPosition;
-        Debug.Log("StartPos: " + StartPos);
         currentGuidingCount = transform.Find("GuidingCounter").GetComponent<TextMeshPro>();
         currentGoalCount = transform.Find("GuidedCounter").GetComponent<TextMeshPro>();
 
         _env.OnEpisodeInitialize += () => {
-            Debug.Log("Episode Initial" + _env.Towers.Count);
             _controller.Targets = _env.Towers;
         };
 
@@ -93,17 +91,17 @@ public class DroneNavAgent : Agent {
     /// <param name="sensor"></param>
     public override void CollectObservations(VectorSensor sensor) {
         //自身の位置・速度を観測情報に追加
-        sensor.AddObservation(transform.localPosition);
+        sensor.AddObservation(transform.position);
         sensor.AddObservation(_controller.NavAgent.speed);
         //sensor.AddObservation(FlyMode);
-        sensor.AddObservation(Target == null ? Vector3.zero : Target.transform.localPosition);
+        sensor.AddObservation(Target == null ? Vector3.zero : Target.transform.position);
         //現在誘導している避難者の数を観測情報に追加
         sensor.AddObservation(currentGuidedEvacuees.Count);
 
         //他のドローンの位置を観測情報に追加
         List<GameObject> otherAgents = GetOtherAgents();
         foreach(GameObject agent in otherAgents) {
-            sensor.AddObservation(agent.transform.localPosition);
+            sensor.AddObservation(agent.transform.position);
             // 他のドローンの選択している目的地と飛行モードを観測情報に追加
             var otherAgent = agent.GetComponent<DroneNavAgent>();
             sensor.AddObservation(otherAgent.currentGuidedEvacuees.Count);
@@ -117,6 +115,8 @@ public class DroneNavAgent : Agent {
             //sensor.AddObservation(tower.transform.localPosition);
             var tower = towerObj.GetComponent<Tower>();
             sensor.AddObservation(tower.currentCapacity);
+            // 各タワーまでの距離を入力として与える
+            sensor.AddObservation(Vector3.Distance(transform.position, towerObj.transform.position));
         }
 
     }
@@ -131,6 +131,14 @@ public class DroneNavAgent : Agent {
         Target = _env.Towers[currentTargetIdx];
         _controller.NavAgent.SetDestination(Target.transform.position);
         _controller.FlyingCtrl(actions);
+
+        // #55 : 受け入れ不可能なタワーを選択した場合、負の報酬を与えてエピソードを終了（エージェント無効化）する
+        Tower destinationTower = Target.GetComponent<Tower>();
+        if(destinationTower.currentCapacity <= 0) {
+            SetReward(-1f);
+            _env.UnregisterAgent(this.gameObject);
+            gameObject.SetActive(false);
+        }
 
         //var mode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
         // FlyMode = mode;

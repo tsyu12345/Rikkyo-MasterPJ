@@ -73,9 +73,9 @@ public abstract class EnvManager : MonoBehaviour {
     public virtual void Start() {
         //Drones = new List<GameObject>();
         NavMesh.pathfindingIterationsPerFrame = 10000; //#47 パス検索の最大イテレーション数を設定
-        if(!OnlyEvacuees && RandomizeEvacueePosition) { // 避難者のみ & 位置ランダムの場合はエージェント不要
-            Agents = new SimpleMultiAgentGroup();
-        }
+    
+        Agents = new SimpleMultiAgentGroup();
+        
         Util = GetComponent<Utils>();
         Init();
         SetEpisodeEndHandlers();
@@ -112,8 +112,7 @@ public abstract class EnvManager : MonoBehaviour {
 
     public void UnregisterAgent(GameObject drone) {
         Agent agent = drone.GetComponent<Agent>();
-        Agents.UnregisterAgent(agent);
-        //drone.SetActive(false);
+        if(agent != null) Agents.UnregisterAgent(agent);
     }
 
     private void SetEpisodeEndHandlers() {
@@ -233,8 +232,8 @@ public abstract class EnvManager : MonoBehaviour {
 
 
     private void AddGroupReward() {
-        Agents.SetGroupReward(AgentGuidedCount);
-        Agents.AddGroupReward(EvacuationRate);
+        //Agents.SetGroupReward(AgentGuidedCount);
+        Agents.SetGroupReward(EvacuationRate * 100);
     }
 
     private void SaveDatas(string filePath) {
