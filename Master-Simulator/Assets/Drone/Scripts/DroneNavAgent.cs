@@ -12,7 +12,8 @@ using Constants;
 public class DroneNavAgent : Agent {
     
     [Header("Agent Parameters")]
-    public float patrolRadius = 10f;    
+    public float patrolRadius = 10f;
+    public float speed = 10f; // #55 実験用速度設定
     public List<GameObject> currentGuidedEvacuees = new List<GameObject>();
     public int guidedCount = 0;
     public GameObject Target;
@@ -136,8 +137,9 @@ public class DroneNavAgent : Agent {
         Tower destinationTower = Target.GetComponent<Tower>();
         if(destinationTower.currentCapacity <= 0) {
             SetReward(-1f);
-            _env.UnregisterAgent(this.gameObject);
-            gameObject.SetActive(false);
+            //_env.UnregisterAgent(this.gameObject);
+            //gameObject.SetActive(false);
+            RequestDecision();
         }
 
         //var mode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];

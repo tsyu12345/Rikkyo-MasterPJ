@@ -87,6 +87,7 @@ public class PLATEAUEnvManager : EnvManager {
                 // 赤円内のナビメッシュ上のランダムな位置にドローンを生成
                 drone.transform.position = GetDronePosOnRandomNavMesh();
                 NavController agentController = drone.GetComponent<NavController>();
+                agentController.NavAgent.radius = 1.0f;
                 // このドローンの直下のナビメッシュ上に避難者を生成する
                 Vector3 spawnPos = drone.transform.position;
                 spawnPos.y = 1.5f; // 避難者の高さを設定
@@ -113,7 +114,6 @@ public class PLATEAUEnvManager : EnvManager {
                 // NOTE: #60-何故か生成後にエージェントの位置が避難者のところにいないことがあるので、ここで補正する。
                 // スポーンした避難者の位置にドローンを移動させる
                 agentController.NavAgent.Warp(CalibrationPos);
-
             }
         }
 
