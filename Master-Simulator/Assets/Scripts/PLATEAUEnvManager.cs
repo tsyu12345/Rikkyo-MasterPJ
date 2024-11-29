@@ -94,7 +94,6 @@ public class PLATEAUEnvManager : EnvManager {
                 Vector3 CalibrationPos = new Vector3(spawnPos.x, spawnPos.y, spawnPos.z);
                 for (int i = 0; i < UnityEngine.Random.Range(EvacueeSpawnSizePerDroneMin, EvacueeSpawnSizePerDroneMax); i++) {
                     var newEvacuee = Instantiate(Evacuee, spawnPos, Quaternion.identity, transform);
-                    Debug.Log("Evacuee Pos: " + newEvacuee.transform.position); //NOTE: この時点での位置はエージェントと一致している
                     Evacuee evacueeIns = newEvacuee.GetComponent<Evacuee>();
                     var isCompleteWarp = evacueeIns.navMeshAgent.Warp(spawnPos);
                     if (!isCompleteWarp) {

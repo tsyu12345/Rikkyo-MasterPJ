@@ -28,11 +28,14 @@ public abstract class EnvManager : MonoBehaviour {
     public float EvacueeSpeedMin = 5.0f;
     public float EvacueeSpeedMax = 15.0f;
     public float ConstantEvacueeSpeed = 5.0f;
+    public int TimeScale = 20;
 
 
     [Header("Environment Parameters")]
     public float EvacuationRate = 0.0f;
-    [Tooltip("Max Environment Steps")] public int MaxEnvironmentSteps = 1000; 
+    [Tooltip("Max Environment Seconds")] 
+    public int MaxEnvironmentSteps = 1000; 
+    public float LimitTimeSec = 120.0f;
 
     [Header("GameObjects")]
     public GameObject Evacuee;
@@ -62,8 +65,9 @@ public abstract class EnvManager : MonoBehaviour {
     private SimpleMultiAgentGroup Agents;
     protected string LogPrefix = "EnvManager: ";
     protected int m_ResetTimer;
+    protected float totalElpTimeSec = 0.0f;
     protected delegate void SpawnCallback(GameObject obj);
-    private List<float> evacueeRateDatas = new List<float>();
+    private List<List<float>> evacueeRateDatas = new List<List<float>>();
     private int currentEpisodeCount = 0;
     private string dataSavePath = "Assets/Datas/";
 
@@ -71,6 +75,10 @@ public abstract class EnvManager : MonoBehaviour {
     public abstract void InitEnv();
 
     public virtual void Start() {
+        Time.timeScale = TimeScale;
+        var uuid = Guid.NewGuid().ToString();
+        var type = OnlyEvacuees ? "EvacueesOnly" : "AgentsModel";
+        dataSavePath += $"{SceneManager.GetActiveScene().name}_{type}_{uuid}/";
         //Drones = new List<GameObject>();
         NavMesh.pathfindingIterationsPerFrame = 10000; //#47 パス検索の最大イテレーション数を設定
     
@@ -83,11 +91,14 @@ public abstract class EnvManager : MonoBehaviour {
 
     void FixedUpdate() {
         m_ResetTimer += 1;
+        totalElpTimeSec += Time.deltaTime;
         EvacuationRate = CalcEvacuationRate();
-        evacueeRateDatas.Add(EvacuationRate); // 1step毎に計測
+
+        evacueeRateDatas.Add(new List<float> {EvacuationRate, totalElpTimeSec});        
 
         bool allEvacuees = isEvacueeAll();
-        bool shouldEndEpisode = m_ResetTimer >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0;
+        //bool shouldEndEpisode = m_ResetTimer >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0;
+        bool shouldEndEpisode = totalElpTimeSec >= LimitTimeSec && LimitTimeSec > 0;
         if (allEvacuees) {
             OnEvacueeAll?.Invoke(EvacuationRate);
         } else if (!OnlyEvacuees) {
@@ -106,7 +117,9 @@ public abstract class EnvManager : MonoBehaviour {
     /// 環境の初期化,全体エピソード開始時にコールされる
     /// </summary>
     public void Init() {
-        InitEnv();
+        totalElpTimeSec = 0;
+        m_ResetTimer = 0;
+        InitEnv(); //継承先の子環境の初期化メソッド
         OnEpisodeInitialize?.Invoke();
     }
 
@@ -209,7 +222,7 @@ public abstract class EnvManager : MonoBehaviour {
 
     private void UpdateUI() {
         if (stepCounter != null) {
-            stepCounter.text = $"Remain Steps : {MaxEnvironmentSteps - m_ResetTimer}";
+            stepCounter.text = $"Remain Seconds : {LimitTimeSec - totalElpTimeSec}";
         }
         if (evacRateCounter != null) {
             int currentRate = (int)(EvacuationRate * 100);
@@ -237,11 +250,15 @@ public abstract class EnvManager : MonoBehaviour {
     }
 
     private void SaveDatas(string filePath) {
+        //フォルダが存在しない場合は作成
+        if (!Directory.Exists(dataSavePath)) {
+            Directory.CreateDirectory(dataSavePath);
+        }
         using (StreamWriter writer = new StreamWriter(filePath)) {
             // 以下に記録したいデータを記述
-            writer.WriteLine("Evacuation Rate, Time");
+            writer.WriteLine("Evacuation Rate, Elapsed Sec");
             for(int i = 0; i < evacueeRateDatas.Count; i++) { 
-                writer.WriteLine($"{evacueeRateDatas[i]}, {i}");
+                writer.WriteLine($"{evacueeRateDatas[i][0]}, {evacueeRateDatas[i][1]}");
             }
             writer.Close();
             Debug.Log($"Data saved to {filePath}");
