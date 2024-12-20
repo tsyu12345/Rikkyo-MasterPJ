@@ -34,7 +34,8 @@ public abstract class EnvManager : MonoBehaviour {
     [Header("Environment Parameters")]
     public float EvacuationRate = 0.0f;
     [Tooltip("Max Environment Seconds")] 
-    public int MaxEnvironmentSteps = 1000; 
+    public float MinLimitTimeSec = 60.0f;
+    public float MaxLimitTimeSec = 300.0f;
     public float LimitTimeSec = 120.0f;
 
     [Header("GameObjects")]
@@ -117,6 +118,8 @@ public abstract class EnvManager : MonoBehaviour {
     /// 環境の初期化,全体エピソード開始時にコールされる
     /// </summary>
     public void Init() {
+        // #66 制限時間のランダム化
+        LimitTimeSec = UnityEngine.Random.Range(MinLimitTimeSec, MaxLimitTimeSec);
         totalElpTimeSec = 0;
         m_ResetTimer = 0;
         InitEnv(); //継承先の子環境の初期化メソッド

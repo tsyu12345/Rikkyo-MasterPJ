@@ -98,6 +98,9 @@ public class DroneNavAgent : Agent {
         sensor.AddObservation(Target == null ? Vector3.zero : Target.transform.position);
         //現在誘導している避難者の数を観測情報に追加
         sensor.AddObservation(currentGuidedEvacuees.Count);
+        
+        // #66 制限時間を観測情報に追加
+        sensor.AddObservation(_env.LimitTimeSec);
 
         //他のドローンの位置を観測情報に追加
         List<GameObject> otherAgents = GetOtherAgents();
