@@ -12,22 +12,34 @@ using Constants;
 /// </summary>
 public class NavController : DroneController {
     public NavMeshAgent NavAgent;
+    [Tooltip("移動速度の最小値。エージェントがスピード値を0以下にすることがあるので、その時の最低移動速度を設定")]
+    public float MinimumSpeed = 6.0f;
+    public bool isArrivalTarget = false;
     public List<GameObject> Targets = new List<GameObject>();
     public float PatrolRadius = 20f;
+    public bool PathFound = false;
     private LineRenderer lineRenderer;
-
     void Start() {
 
         base.Start();
 
         NavAgent = GetComponent<NavMeshAgent>();
-        NavAgent.autoBraking = false;
+        //NavAgent.autoBraking = false;
 
         lineRenderer = GetComponent<LineRenderer>();
         lineRenderer.startWidth = 0.1f;
         lineRenderer.endWidth = 0.1f;
         lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
         lineRenderer.positionCount = 0;
+    }
+
+    void FixedUpdate() {
+        PathFound = NavAgent.pathPending? false : true;
+        if(PathFound && NavAgent.remainingDistance <= 1.0f) {
+            isArrivalTarget = true;
+        } else {
+            isArrivalTarget = false;
+        }
     }
 
     public override void InHeuristicCtrl(in ActionBuffers actionsOut) {
@@ -41,24 +53,25 @@ public class NavController : DroneController {
         }
     }
     public override void FlyingCtrl(ActionBuffers actions) {
-        float speedInput = actions.ContinuousActions[(int)NavAgentCtrlIndex.Speed]; //速度の入力
-        NavAgent.speed = speedInput * moveSpeed;
+        //float speedInput = actions.ContinuousActions[(int)NavAgentCtrlIndex.Speed]; //速度の入力
+        NavAgent.speed = moveSpeed;
+        /*
+        if(NavAgent.speed <= 0) { // エージェントが動かないケースは除外したいので速度補正を実施
+            NavAgent.speed = MinimumSpeed;
+        }
+        */
 
-        var flyMode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
+        //var flyMode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
 
-        var isWaitingMode = flyMode == 0;
-        var isSearchMode = flyMode == 1;
-
-        if(isWaitingMode) {
-            NavAgent.SetDestination(transform.position);
-            lineRenderer.positionCount = 0;
-        } else if(isSearchMode) {
+        //var isWaitingMode = flyMode == 0;
+        //var isSearchMode = flyMode == 0;
+        /*
+        if(isSearchMode) {
             SearchFlying(actions);
         } else  {
-            Vector3 target = Targets[(int)NavAgentCtrlIndex.Destination].transform.position;
-            NavAgent.SetDestination(target);
-            lineRenderer.positionCount = 0;
+
         }
+        */
     }
 
     /// <summary>

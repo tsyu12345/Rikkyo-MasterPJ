@@ -12,7 +12,8 @@ using Constants;
 public class DroneNavAgent : Agent {
     
     [Header("Agent Parameters")]
-    public float patrolRadius = 10f;    
+    public float patrolRadius = 10f;
+    public float speed = 10f; // #55 実験用速度設定
     public List<GameObject> currentGuidedEvacuees = new List<GameObject>();
     public int guidedCount = 0;
     public GameObject Target;
@@ -23,7 +24,7 @@ public class DroneNavAgent : Agent {
     private TextMeshPro currentGoalCount;
     
     private EnvManager _env;
-    private NavController _controller;
+    public NavController _controller;
     private Vector3 StartPos;
 
     private string LogPrefix = "DroneAgent: ";
@@ -36,18 +37,23 @@ public class DroneNavAgent : Agent {
         _controller.PatrolRadius = patrolRadius;
         _env = GetComponentInParent<EnvManager>();
         _env.Drones.Add(this.gameObject);
+
+        if(_env.OnlyEvacuees) {
+            this.gameObject.SetActive(false);
+            return;
+        }
+
         _controller.RegisterTeam(gameObject.tag);
         _controller.onCrash += OnCrash;
-        _env.OnEndEpisode += OnEndEpisodeHandler;
+        _controller.onEmptyBattery += OnBatteryEmpty;
+        //_env.OnEndEpisode += OnEndEpisodeHandler;
 
         // 初期位置を保存
         StartPos = transform.localPosition;
-
         currentGuidingCount = transform.Find("GuidingCounter").GetComponent<TextMeshPro>();
         currentGoalCount = transform.Find("GuidedCounter").GetComponent<TextMeshPro>();
 
         _env.OnEpisodeInitialize += () => {
-            Debug.Log("Episode Initial" + _env.Towers.Count);
             _controller.Targets = _env.Towers;
         };
 
@@ -59,6 +65,10 @@ public class DroneNavAgent : Agent {
     void Update() {
         currentGuidingCount.text = currentGuidedEvacuees.Count.ToString();
         currentGoalCount.text = guidedCount.ToString();
+        
+        if(_controller.isArrivalTarget) {
+            RequestDecision();
+        }
     }
 
     public override void Initialize() {
@@ -68,6 +78,7 @@ public class DroneNavAgent : Agent {
 
     public override void OnEpisodeBegin() {
         Reset();
+        RequestDecision();
     }
 
     /// <summary>
@@ -81,21 +92,24 @@ public class DroneNavAgent : Agent {
     /// <param name="sensor"></param>
     public override void CollectObservations(VectorSensor sensor) {
         //自身の位置・速度を観測情報に追加
-        sensor.AddObservation(transform.localPosition);
+        sensor.AddObservation(transform.position);
         sensor.AddObservation(_controller.NavAgent.speed);
-        sensor.AddObservation(FlyMode);
-        sensor.AddObservation(Target == null ? Vector3.zero : Target.transform.localPosition);
+        //sensor.AddObservation(FlyMode);
+        sensor.AddObservation(Target == null ? Vector3.zero : Target.transform.position);
         //現在誘導している避難者の数を観測情報に追加
         sensor.AddObservation(currentGuidedEvacuees.Count);
+        
+        // #66 制限時間を観測情報に追加
+        sensor.AddObservation(_env.LimitTimeSec);
 
         //他のドローンの位置を観測情報に追加
         List<GameObject> otherAgents = GetOtherAgents();
         foreach(GameObject agent in otherAgents) {
-            sensor.AddObservation(agent.transform.localPosition);
+            sensor.AddObservation(agent.transform.position);
             // 他のドローンの選択している目的地と飛行モードを観測情報に追加
             var otherAgent = agent.GetComponent<DroneNavAgent>();
             sensor.AddObservation(otherAgent.currentGuidedEvacuees.Count);
-            sensor.AddObservation(otherAgent.FlyMode);
+            //sensor.AddObservation(otherAgent.FlyMode);
             sensor.AddObservation(otherAgent.Target == null ? Vector3.zero : otherAgent.Target.transform.localPosition);
         }
         
@@ -105,6 +119,8 @@ public class DroneNavAgent : Agent {
             //sensor.AddObservation(tower.transform.localPosition);
             var tower = towerObj.GetComponent<Tower>();
             sensor.AddObservation(tower.currentCapacity);
+            // 各タワーまでの距離を入力として与える
+            sensor.AddObservation(Vector3.Distance(transform.position, towerObj.transform.position));
         }
 
     }
@@ -115,13 +131,23 @@ public class DroneNavAgent : Agent {
     /// 3. 目的地選択 - 離散値
     /// <param name="actions"></param>
     public override void OnActionReceived(ActionBuffers actions) {
+        var currentTargetIdx = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
+        Target = _env.Towers[currentTargetIdx];
+        _controller.NavAgent.SetDestination(Target.transform.position);
         _controller.FlyingCtrl(actions);
 
-        var mode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
-        var currentTarget = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
+        // #55 : 受け入れ不可能なタワーを選択した場合、負の報酬を与えてエピソードを終了（エージェント無効化）する
+        Tower destinationTower = Target.GetComponent<Tower>();
+        if(destinationTower.currentCapacity <= 0) {
+            SetReward(-1f);
+            //_env.UnregisterAgent(this.gameObject);
+            //gameObject.SetActive(false);
+            RequestDecision();
+        }
 
-        FlyMode = mode;
-        Target = mode == 2 ? _controller.Targets[currentTarget] : null;
+        //var mode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
+        // FlyMode = mode;
+        //Target = mode == 1 ? _controller.Targets[currentTarget] : null;
     }
 
     public override void Heuristic(in ActionBuffers actionsOut) {
@@ -144,7 +170,14 @@ public class DroneNavAgent : Agent {
         gameObject.SetActive(false);
     }
 
-    private void OnEndEpisodeHandler(float evacueeRate) {
+    private void OnBatteryEmpty() {
+        // TODO:ドローンの充電ステーションを加えてみる
+        //エージェントグループからの登録を削除
+        _env.UnregisterAgent(this.gameObject);
+        gameObject.SetActive(false);
+    }
+
+    public void OnEndEpisodeHandler(float evacueeRate) {
         if(guidedCount > 0) {
             SetReward(guidedCount);
             _env.AgentGuidedCount += guidedCount;
@@ -159,7 +192,7 @@ public class DroneNavAgent : Agent {
     private void Reset() {
         //とりあえず、0地点にリセット
         transform.localRotation = Quaternion.Euler(0, 0, 0);
-        transform.localPosition = StartPos;
+        //transform.localPosition = StartPos;
         //Rbodyのパラメータをリセット
         _controller.Rbody.velocity = Vector3.zero;
         _controller.Rbody.useGravity = false;

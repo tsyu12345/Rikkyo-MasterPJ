@@ -22,9 +22,21 @@ public class Tower : MonoBehaviour{
 
     private MeshRenderer ExMark; //受け入れ不可を示すマーク
 
+    private EnvManager _env;
+
+    void Awake() {
+        // 受け入れ可能数の初期値を設定
+        currentCapacity = MaxCapacity;
+    }
+
     void Start() {
         ExMark = transform.Find("ExMark").GetComponent<MeshRenderer>();
         ExMark.enabled = false;
+        _env = GetComponentInParent<EnvManager>();
+        _env.OnEndEpisode += (float _) => {
+            NowAccCount = 0;
+            ExMark.enabled = false;
+        };
     }
 
     void Update() {
