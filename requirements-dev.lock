@@ -93,9 +93,9 @@ matplotlib==3.8.4
 matplotlib-inline==0.1.7
     # via ipykernel
     # via ipython
-mlagents==1.0.0
+mlagents==1.1.0
     # via rikkyo-masterpj
-mlagents-envs==1.0.0
+mlagents-envs==1.1.0
     # via mlagents
 mpmath==1.3.0
     # via sympy
@@ -103,7 +103,7 @@ nest-asyncio==1.6.0
     # via ipykernel
 networkx==3.3
     # via torch
-numpy==1.21.2
+numpy==1.23.5
     # via contourpy
     # via gym
     # via h5py
@@ -115,7 +115,7 @@ numpy==1.21.2
     # via pettingzoo
     # via tensorboard
     # via torchvision
-onnx==1.12.0
+onnx==1.15.0
     # via mlagents
 packaging==24.0
     # via huggingface-hub
@@ -136,7 +136,7 @@ platformdirs==4.3.6
     # via jupyter-core
 prompt-toolkit==3.0.48
     # via ipython
-protobuf==3.19.6
+protobuf==3.20.3
     # via mlagents
     # via mlagents-envs
     # via onnx
@@ -169,6 +169,7 @@ pyzmq==26.2.0
     # via jupyter-client
 requests==2.31.0
     # via huggingface-hub
+    # via torchvision
 six==1.16.0
     # via asttokens
     # via grpcio
@@ -183,14 +184,14 @@ tensorboard==2.16.2
     # via mlagents
 tensorboard-data-server==0.7.2
     # via tensorboard
-torch==2.2.2+cu118
+torch==2.1.1+cu118
     # via mlagents
     # via rikkyo-masterpj
     # via torchaudio
     # via torchvision
-torchaudio==2.2.2+cu118
+torchaudio==2.1.1+cu118
     # via rikkyo-masterpj
-torchvision==0.17.2+cu118
+torchvision==0.16.1+cu118
     # via rikkyo-masterpj
 tornado==6.4.1
     # via ipykernel
@@ -207,7 +208,6 @@ traitlets==5.14.3
 typing-extensions==4.11.0
     # via huggingface-hub
     # via ipython
-    # via onnx
     # via torch
 tzdata==2024.2
     # via pandas
