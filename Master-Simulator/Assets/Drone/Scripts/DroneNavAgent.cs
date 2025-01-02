@@ -13,7 +13,6 @@ public class DroneNavAgent : Agent {
     
     [Header("Agent Parameters")]
     public float patrolRadius = 10f;
-    public float speed = 10f; // #55 実験用速度設定
     public List<GameObject> currentGuidedEvacuees = new List<GameObject>();
     public int guidedCount = 0;
     public GameObject Target;
@@ -25,7 +24,6 @@ public class DroneNavAgent : Agent {
     
     private EnvManager _env;
     public NavController _controller;
-    private Vector3 StartPos;
 
     private string LogPrefix = "DroneAgent: ";
 
@@ -38,7 +36,7 @@ public class DroneNavAgent : Agent {
         _env = GetComponentInParent<EnvManager>();
         _env.Drones.Add(this.gameObject);
 
-        if(_env.OnlyEvacuees) {
+        if(_env.SimulateMode == EnvManager.SimulateModeSetting.EvacueesOnly) {
             this.gameObject.SetActive(false);
             return;
         }
@@ -48,8 +46,6 @@ public class DroneNavAgent : Agent {
         _controller.onEmptyBattery += OnBatteryEmpty;
         //_env.OnEndEpisode += OnEndEpisodeHandler;
 
-        // 初期位置を保存
-        StartPos = transform.localPosition;
         currentGuidingCount = transform.Find("GuidingCounter").GetComponent<TextMeshPro>();
         currentGoalCount = transform.Find("GuidedCounter").GetComponent<TextMeshPro>();
 
@@ -185,9 +181,6 @@ public class DroneNavAgent : Agent {
             SetReward(-1f);
         }
     }
-
-    /** Env Event Handlers */
-
 
     private void Reset() {
         //とりあえず、0地点にリセット

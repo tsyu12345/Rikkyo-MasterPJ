@@ -11,9 +11,9 @@ using Constants;
 /// ナビゲーションメッシュを用いたエージェントの制御クラス
 /// </summary>
 public class NavController : DroneController {
+    public float moveSpeed = 10f; // 移動速度
     public NavMeshAgent NavAgent;
     [Tooltip("移動速度の最小値。エージェントがスピード値を0以下にすることがあるので、その時の最低移動速度を設定")]
-    public float MinimumSpeed = 6.0f;
     public bool isArrivalTarget = false;
     public List<GameObject> Targets = new List<GameObject>();
     public float PatrolRadius = 20f;

@@ -11,9 +11,6 @@ using Constants;
 /// 全ドローンクラスの基底クラス.ドローンの操作、動作に関する処理
 /// </summary>
 public abstract class DroneController : MonoBehaviour {
-    [Header("Movement Parameters")]
-    public float moveSpeed = 10f; // 移動速度
-    public float rotSpeed = 100f; // 回転速度
 
     [Header("Battery")]
     public bool useBatterySimulation; // バッテリー消費の有無
@@ -46,7 +43,6 @@ public abstract class DroneController : MonoBehaviour {
 
     protected void Start() {
         Rbody = GetComponent<Rigidbody>();
-        //communicateArea.transform.localScale = new Vector3(communicationRange, communicationRange, communicationRange);
         if(useBatterySimulation) {
             StartCoroutine(BatteryDrainCoroutine());
         }

@@ -16,27 +16,50 @@ using UnityEngine.SceneManagement;
 /// その基底クラス 
 /// </summary>
 public abstract class EnvManager : MonoBehaviour {
-    [Header("SImulator Settings")]
-    [Tooltip("エージェントを省いた単純な避難者のみのシミュレーションを行います")]
-    public bool OnlyEvacuees = false;
-    [Tooltip("避難者の位置をランダムに指定するか否か")]
-    public bool RandomizeEvacueePosition = false;
-    [Tooltip("モデルトレーニングを行うかどうか")]
-    public bool modelTrain = false;
-    [Tooltip("避難者の速度をランダムに設定します。")]
-    public bool EnableRandmizeSpeedEvacuee = false;
+    public enum SimulateModeSetting {
+        EvacueesOnly,
+        AgentsModel
+    }
+    public enum EvacueeSpawnModeSetting {
+        SingleRandom,
+        Group
+    }
+    public enum TrainerMode {
+        Train,
+        Inference
+    }
+    public enum EvacueeSpeedSetting {
+        Random,
+        Constant
+    }
+    public enum LimitTimeModeSetting {
+        Random,
+        Constant,
+        Stage
+    }
+    [Header("シミュレーションモード選択")]
+    public SimulateModeSetting SimulateMode = SimulateModeSetting.EvacueesOnly;
+    public EvacueeSpawnModeSetting EvacueeSpawnPosMode = EvacueeSpawnModeSetting.SingleRandom;
+    public TrainerMode TrainMode = TrainerMode.Train;
+    public EvacueeSpeedSetting EvacueeSpeedMode = EvacueeSpeedSetting.Random;
+    public LimitTimeModeSetting LimitTimeMode = LimitTimeModeSetting.Random;
+    [Header("避難者スポーン設定")]
+    public int EvacueeSpawnSizePerDroneMin = 10;
+    public int EvacueeSpawnSizePerDroneMax = 20;
+    [Header("避難者スピード設定")]
     public float EvacueeSpeedMin = 5.0f;
     public float EvacueeSpeedMax = 15.0f;
     public float ConstantEvacueeSpeed = 5.0f;
+    [Header("制限時間設定")]
+    public float MinLimitTimeSec = 60.0f;
+    public float MaxLimitTimeSec = 300.0f;
+    public float LimitTimeSec = 120.0f;
+    [Header("その他設定")]
     public int TimeScale = 20;
 
 
     [Header("Environment Parameters")]
     public float EvacuationRate = 0.0f;
-    [Tooltip("Max Environment Seconds")] 
-    public float MinLimitTimeSec = 60.0f;
-    public float MaxLimitTimeSec = 300.0f;
-    public float LimitTimeSec = 120.0f;
 
     [Header("GameObjects")]
     public GameObject Evacuee;
@@ -64,7 +87,6 @@ public abstract class EnvManager : MonoBehaviour {
     public EpisodeInitializeHandler OnEpisodeInitialize;
 
     private SimpleMultiAgentGroup Agents;
-    protected string LogPrefix = "EnvManager: ";
     protected int m_ResetTimer;
     protected float totalElpTimeSec = 0.0f;
     protected delegate void SpawnCallback(GameObject obj);
@@ -78,9 +100,9 @@ public abstract class EnvManager : MonoBehaviour {
     public virtual void Start() {
         Time.timeScale = TimeScale;
         var uuid = Guid.NewGuid().ToString();
-        var type = OnlyEvacuees ? "EvacueesOnly" : "AgentsModel";
+        var type = SimulateMode == SimulateModeSetting.EvacueesOnly ? "EvacueesOnly" : "AgentsModel";
         dataSavePath += $"{SceneManager.GetActiveScene().name}_{type}_{uuid}/";
-        //Drones = new List<GameObject>();
+        
         NavMesh.pathfindingIterationsPerFrame = 10000; //#47 パス検索の最大イテレーション数を設定
     
         Agents = new SimpleMultiAgentGroup();
@@ -91,6 +113,34 @@ public abstract class EnvManager : MonoBehaviour {
     }
 
     void FixedUpdate() {
+        UpdateSimulate();
+        UpdateUI();
+    }
+
+    /// <summary>
+    /// 環境の初期化,全体エピソード開始時にコールされる
+    /// </summary>
+    public void Init() {
+        
+        if(LimitTimeMode == LimitTimeModeSetting.Random) { // #66 制限時間のランダム化
+            LimitTimeSec = UnityEngine.Random.Range(MinLimitTimeSec, MaxLimitTimeSec);
+        } else if(LimitTimeMode == LimitTimeModeSetting.Stage) { 
+            // #TODO : #69 段階的に制限時間を設定する機能
+        } else { // 固定値の制限時間
+            LimitTimeSec = LimitTimeSec;
+        }
+        totalElpTimeSec = 0;
+        m_ResetTimer = 0;
+        InitEnv(); //継承先の子環境の初期化メソッド
+        OnEpisodeInitialize?.Invoke(); // 環境準備完了のイベント発行
+    }
+
+    public void UnregisterAgent(GameObject drone) {
+        Agent agent = drone.GetComponent<Agent>();
+        if(agent != null) Agents.UnregisterAgent(agent);
+    }
+
+    private void UpdateSimulate() {
         m_ResetTimer += 1;
         totalElpTimeSec += Time.deltaTime;
         EvacuationRate = CalcEvacuationRate();
@@ -102,7 +152,7 @@ public abstract class EnvManager : MonoBehaviour {
         bool shouldEndEpisode = totalElpTimeSec >= LimitTimeSec && LimitTimeSec > 0;
         if (allEvacuees) {
             OnEvacueeAll?.Invoke(EvacuationRate);
-        } else if (!OnlyEvacuees) {
+        } else if (SimulateMode == SimulateModeSetting.AgentsModel) {
             var remainAgents = Agents.GetRegisteredAgents();
             if (remainAgents.Count < 1 || shouldEndEpisode) {
                 OnEndEpisode?.Invoke(EvacuationRate);
@@ -110,65 +160,39 @@ public abstract class EnvManager : MonoBehaviour {
         } else if (shouldEndEpisode) {
             OnEndEpisode?.Invoke(EvacuationRate);
         }
-
-        UpdateUI();
     }
 
-    /// <summary>
-    /// 環境の初期化,全体エピソード開始時にコールされる
-    /// </summary>
-    public void Init() {
-        // #66 制限時間のランダム化
-        LimitTimeSec = UnityEngine.Random.Range(MinLimitTimeSec, MaxLimitTimeSec);
-        totalElpTimeSec = 0;
-        m_ResetTimer = 0;
-        InitEnv(); //継承先の子環境の初期化メソッド
-        OnEpisodeInitialize?.Invoke();
-    }
 
-    public void UnregisterAgent(GameObject drone) {
-        Agent agent = drone.GetComponent<Agent>();
-        if(agent != null) Agents.UnregisterAgent(agent);
+    private void HandleEndEpisode(float evacueeRate, bool isEvacueeAll) {
+        var type = SimulateMode == SimulateModeSetting.EvacueesOnly ? "EvacueesOnly" : "AgentsModel";
+        var fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_evacuationRate.csv";
+        if(TrainMode == TrainerMode.Inference) {
+            SaveDatas(dataSavePath + fileName);
+        }
+        if(SimulateMode == SimulateModeSetting.AgentsModel) {
+            // エージェントのエピソード終了処理を発行
+            foreach(GameObject drone in Drones) {
+                var agent = drone.GetComponent<DroneNavAgent>();
+                agent.OnEndEpisodeHandler(evacueeRate);
+            }
+            AddGroupReward();
+            if(isEvacueeAll) {
+                Agents.EndGroupEpisode();
+            } else {
+                Agents.GroupEpisodeInterrupted();
+            }
+        }
+        currentEpisodeCount++;
+        evacueeRateDatas.Clear();
+        Init();
     }
 
     private void SetEpisodeEndHandlers() {
-        OnEvacueeAll += (float evacueeRate) => {
-            var type = OnlyEvacuees ? "EvacueesOnly" : "AgentsModel";
-            var fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_evacuationRate.csv";
-            if(!modelTrain) {
-                SaveDatas(dataSavePath + fileName);
-            }
-            if(!OnlyEvacuees) {
-                // エージェントのエピソード終了処理を発行
-                foreach(GameObject drone in Drones) {
-                    var agent = drone.GetComponent<DroneNavAgent>();
-                    agent.OnEndEpisodeHandler(evacueeRate);
-                }
-                AddGroupReward();
-                Agents.EndGroupEpisode();
-            }
-            currentEpisodeCount++;
-            evacueeRateDatas.Clear();
-            Init();
+        OnEvacueeAll += (evacueeRate) => {
+            HandleEndEpisode(evacueeRate, true);
         };
-        OnEndEpisode += (float evacueeRate) => {
-            var type = OnlyEvacuees ? "EvacueesOnly" : "AgentsModel";
-            var fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_evacuationRate.csv";
-            if(!modelTrain) {
-                SaveDatas(dataSavePath + fileName);
-            }
-            if(!OnlyEvacuees) {
-                // エージェントのエピソード終了処理を発行
-                foreach(GameObject drone in Drones) {
-                    var agent = drone.GetComponent<DroneNavAgent>();
-                    agent.OnEndEpisodeHandler(evacueeRate);
-                }
-                AddGroupReward();
-                Agents.GroupEpisodeInterrupted();
-            }
-            currentEpisodeCount++;
-            evacueeRateDatas.Clear();
-            Init();
+        OnEndEpisode += (evacueeRate) => {
+            HandleEndEpisode(evacueeRate, false);
         };
     }
 
@@ -231,7 +255,7 @@ public abstract class EnvManager : MonoBehaviour {
             int currentRate = (int)(EvacuationRate * 100);
             evacRateCounter.text = $"Rate : {currentRate}%";
         }
-        if (remainAgentsCounter != null && !OnlyEvacuees) {
+        if (remainAgentsCounter != null && SimulateMode == SimulateModeSetting.AgentsModel) {
             remainAgentsCounter.text = $"Remain Agents : {Agents.GetRegisteredAgents().Count}";
         }
     }
@@ -246,9 +270,10 @@ public abstract class EnvManager : MonoBehaviour {
         return (float)evacuatedCount / Evacuees.Count;
     }
 
-
+    /// <summary>
+    /// グループ報酬の報酬関数
+    /// </summary>
     private void AddGroupReward() {
-        //Agents.SetGroupReward(AgentGuidedCount);
         Agents.SetGroupReward(EvacuationRate * 100);
     }
 

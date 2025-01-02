@@ -11,6 +11,10 @@ using Constants;
 /// 物理演算でドローンを制御するクラス
 /// </summary>
 public class PhysicsController : DroneController {
+    [Header("Movement Parameters")]
+    public float moveSpeed = 10f; // 移動速度
+    public float rotSpeed = 100f; // 回転速度
+
 
     /// <summary>
     /// （物理コントロール専用）ドローンの移動制御関数

@@ -13,13 +13,6 @@ using TMPro;
 /// 都市モデル環境用のスクリプト
 /// </summary>
 public class PLATEAUEnvManager : EnvManager {
-    [Header("#55 実験用パラメータ")]
-
-    public int EvacueeSpawnSizePerDroneMin = 10;
-    public int EvacueeSpawnSizePerDroneMax = 20;
-    //public bool OnlyEvacueeMode = false;
-    [SerializeField]
-    private List<GameObject> evacueesSpawnAreas;
 
     [Header("Evacuees Spawn Settings")]
     public float EvacueeSpawnRadius = 10.0f; // ランダム生成範囲の半径
@@ -29,10 +22,8 @@ public class PLATEAUEnvManager : EnvManager {
     private Color gizmoColor = Color.red; // エディタ上でスポーン範囲を示す線の色
 
     void OnDrawGizmos() {
-        Gizmos.color = gizmoColor; // Gizmoの色を設定
-        var yOffset = 10.0f;
-        Vector3 offsetSpawnCenter = new Vector3(SpawnCenter.x, SpawnCenter.y + yOffset, SpawnCenter.z); // Y座標をyOffset分上げる
-        Gizmos.DrawWireSphere(offsetSpawnCenter, EvacueeSpawnRadius); // 中心から半径のワイヤーフレームの球体を描画
+        Gizmos.color = gizmoColor;
+        DrawWireCircle(SpawnCenter, EvacueeSpawnRadius);
     }
     public override void Start() {
         base.Start();
@@ -50,12 +41,15 @@ public class PLATEAUEnvManager : EnvManager {
     public override void InitEnv() {
         DestroyEnv();
         RegisterTowers();
-        if(base.OnlyEvacuees && base.RandomizeEvacueePosition) {
+
+        // 避難者のみモード & 避難者の初期位置が各個ランダム
+        if(base.SimulateMode == SimulateModeSetting.EvacueesOnly && base.EvacueeSpawnPosMode == EvacueeSpawnModeSetting.SingleRandom) {
             for(int i = 0; i < EvacueeSize; i++) {
                 // 赤円内のナビメッシュ上のランダムな位置に避難者を生成
                 SpawnEvacueeOnNavMesh();
             }
-        } else if(base.OnlyEvacuees && !base.RandomizeEvacueePosition) {
+        // 避難者のみモード & 避難者の初期位置がグループ毎ランダムの場合
+        } else if(base.SimulateMode == SimulateModeSetting.EvacueesOnly && base.EvacueeSpawnPosMode == EvacueeSpawnModeSetting.Group) {
             // 仮想的にエージェントの生成位置を計算し、その配下に避難者グループを形成させる。
             foreach(var drone in base.Drones) {
                 var virtualDronePos = GetDronePosOnRandomNavMesh();
@@ -80,6 +74,7 @@ public class PLATEAUEnvManager : EnvManager {
                     CalibrationPos = newEvacuee.transform.position;
                 }
             }
+        // エージェント有りモード
         } else {
             RegisterAgents(Tags.Agent);
             Drones = new List<GameObject>(GameObject.FindGameObjectsWithTag(Tags.Agent));
@@ -102,7 +97,7 @@ public class PLATEAUEnvManager : EnvManager {
                         if (NavMesh.SamplePosition(spawnPos, out NavMeshHit hit, 1.0f, NavMesh.AllAreas)) {
                             newEvacuee.transform.position = hit.position;
                         } else {
-                            Debug.LogWarning("避難者がNavMesh上に生成できませんでした。位置を確認してください。");
+                            Debug.LogError("避難者がNavMesh上に生成できませんでした。位置を確認してください。");
                         }
                     }
                     Evacuees.Add(newEvacuee);
@@ -119,7 +114,7 @@ public class PLATEAUEnvManager : EnvManager {
         // 避難者の移動速度の設定
         foreach (var evacuee in Evacuees) {
             var eva = evacuee.GetComponent<Evacuee>();
-            if (base.EnableRandmizeSpeedEvacuee) {
+            if (base.EvacueeSpeedMode == EvacueeSpeedSetting.Random) {
                 eva.Speed = UnityEngine.Random.Range(base.EvacueeSpeedMin, base.EvacueeSpeedMax);
             } else {
                 eva.Speed = base.ConstantEvacueeSpeed;
@@ -143,7 +138,7 @@ public class PLATEAUEnvManager : EnvManager {
         RemoveObjectAll(Tags.Evacuee);
         
         foreach(var drone in Drones) {
-            if(!base.OnlyEvacuees) {
+            if(base.SimulateMode == SimulateModeSetting.AgentsModel) {
                 UnregisterAgent(drone);
             }
         }
@@ -181,5 +176,25 @@ public class PLATEAUEnvManager : EnvManager {
             return hit.position;
         }
         return Vector3.zero; // ナビメッシュが見つからなかった場合
+    }
+
+    /// <summary>
+    /// 避難者のランダムスポーン範囲を描画する
+    /// </summary>
+    private static void DrawWireCircle(Vector3 center, float radius, int segments = 36) {
+        float angle = 0f;
+        float angleStep = 360f / segments;
+
+        Vector3 prevPoint = center + new Vector3(radius, 5, 0); // 初期点
+
+        for (int i = 1; i <= segments; i++) {
+            angle += angleStep;
+            float rad = Mathf.Deg2Rad * angle;
+
+            Vector3 newPoint = center + new Vector3(Mathf.Cos(rad) * radius, 5, Mathf.Sin(rad) * radius);
+            Gizmos.DrawLine(prevPoint, newPoint);
+
+            prevPoint = newPoint; // 次の線を描画するために現在の点を更新
+        }
     }
 }
