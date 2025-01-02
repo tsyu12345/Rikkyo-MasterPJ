@@ -144,8 +144,9 @@ public abstract class EnvManager : MonoBehaviour {
         m_ResetTimer += 1;
         totalElpTimeSec += Time.deltaTime;
         EvacuationRate = CalcEvacuationRate();
-
-        evacueeRateDatas.Add(new List<float> {EvacuationRate, totalElpTimeSec});        
+        if(TrainMode == TrainerMode.Inference) {
+            evacueeRateDatas.Add(new List<float> {EvacuationRate, totalElpTimeSec});        
+        }
 
         bool allEvacuees = isEvacueeAll();
         //bool shouldEndEpisode = m_ResetTimer >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0;
