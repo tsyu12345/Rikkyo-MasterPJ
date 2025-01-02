@@ -146,8 +146,19 @@ public class DroneNavAgent : Agent {
         //Target = mode == 1 ? _controller.Targets[currentTarget] : null;
     }
 
+
+    /// <summary>
+    /// 最短距離の受け入れ可能な避難タワーを選択する
+    /// </summary>
+    /// <param name="actionsOut"></param>
     public override void Heuristic(in ActionBuffers actionsOut) {
-        // TODO: Implement
+        GameObject closestTower = GetClosestVaildShelter(transform.position);
+        if(closestTower == null) {
+            actionsOut.DiscreteActions.Array[0] = 0;
+            return;
+        }
+        int index = _env.Towers.IndexOf(closestTower);
+        actionsOut.DiscreteActions.Array[0] = index; // エージェントの行動を設定
     }
 
     /** Drone Event Handlers */
@@ -207,5 +218,27 @@ public class DroneNavAgent : Agent {
             }
         }
         return otherAgents;
+    }
+
+    /// <summary>
+    /// 入力座標から最も近い受け入れ可能な避難タワーを取得する #67
+    /// </summary>
+    /// <returns></returns>
+    private GameObject GetClosestVaildShelter(Vector3 pos) {
+        GameObject[] shelters = GameObject.FindGameObjectsWithTag(Tags.Tower);
+        List<GameObject> sortedShelters = new List<GameObject>();
+        foreach (var shelter in shelters) {
+            // 受け入れ可能か判定
+            Tower tower = shelter.GetComponent<Tower>();
+            if (tower.currentCapacity > 0) {
+                sortedShelters.Add(shelter);
+            }
+        }
+        sortedShelters.Sort((a, b) => Vector3.Distance(a.transform.position, pos).CompareTo(Vector3.Distance(b.transform.position, pos)));
+        if (sortedShelters.Count > 0) {
+            return sortedShelters[0];
+        } else {
+            return null;
+        }
     }
 }
