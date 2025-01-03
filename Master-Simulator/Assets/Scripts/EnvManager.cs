@@ -38,10 +38,15 @@ public abstract class EnvManager : MonoBehaviour {
         Stage
     }
     [Header("シミュレーションモード選択")]
+    [Tooltip("避難者のみのシミュレーションかエージェントモデルを含むかの選択")]
     public SimulateModeSetting SimulateMode = SimulateModeSetting.EvacueesOnly;
+    [Tooltip("避難者のスポーンモードの選択。SingleRandomはランダムな位置に一人ずつ、Groupは集団単位でスポーン")]
     public EvacueeSpawnModeSetting EvacueeSpawnPosMode = EvacueeSpawnModeSetting.SingleRandom;
+    [Tooltip("トレーニングモードか推論モードかの選択。トレーニングモードの時はデータ記録を行いません")]
     public TrainerMode TrainMode = TrainerMode.Train;
+    [Tooltip("避難者のスピード設定。Randomは個体毎にランダムなスピード、Constantは全個体一定のスピード")]
     public EvacueeSpeedSetting EvacueeSpeedMode = EvacueeSpeedSetting.Random;
+    [Tooltip("制限時間の設定。Randomはランダムな制限時間、Constantは固定の制限時間、Stageは段階的に制限時間を更新")]
     public LimitTimeModeSetting LimitTimeMode = LimitTimeModeSetting.Random;
     [Header("避難者スポーン設定")]
     public int EvacueeSpawnSizePerDroneMin = 10;
@@ -51,9 +56,14 @@ public abstract class EnvManager : MonoBehaviour {
     public float EvacueeSpeedMax = 15.0f;
     public float ConstantEvacueeSpeed = 5.0f;
     [Header("制限時間設定")]
+    [Tooltip("制限時間がランダムな場合の下限")]
     public float MinLimitTimeSec = 60.0f;
+    [Tooltip("制限時間がランダムな場合の上限")]
     public float MaxLimitTimeSec = 300.0f;
+    [Tooltip("制限時間が定数な場合の制限時間")]
     public float LimitTimeSec = 120.0f;
+    [Tooltip("制限時間を段階更新する場合の更新間隔")]
+    public float LimitRenewIntervalSec = 100f;
     [Header("その他設定")]
     public int TimeScale = 20;
 
@@ -125,7 +135,10 @@ public abstract class EnvManager : MonoBehaviour {
         if(LimitTimeMode == LimitTimeModeSetting.Random) { // #66 制限時間のランダム化
             LimitTimeSec = UnityEngine.Random.Range(MinLimitTimeSec, MaxLimitTimeSec);
         } else if(LimitTimeMode == LimitTimeModeSetting.Stage) { 
-            // #TODO : #69 段階的に制限時間を設定する機能
+            LimitTimeSec = MinLimitTimeSec + LimitRenewIntervalSec * currentEpisodeCount;
+            if(LimitTimeSec > MaxLimitTimeSec) {
+                LimitTimeSec = MaxLimitTimeSec;
+            }
         } else { // 固定値の制限時間
             LimitTimeSec = LimitTimeSec;
         }
