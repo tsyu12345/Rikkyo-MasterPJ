@@ -97,7 +97,8 @@ public abstract class EnvManager : MonoBehaviour {
     public EpisodeInitializeHandler OnEpisodeInitialize;
 
     private SimpleMultiAgentGroup Agents;
-    protected int m_ResetTimer;
+    public float currentTimeSec;
+    public string envUUID;
     protected float totalElpTimeSec = 0.0f;
     protected delegate void SpawnCallback(GameObject obj);
     private List<List<float>> evacueeRateDatas = new List<List<float>>();
@@ -109,9 +110,9 @@ public abstract class EnvManager : MonoBehaviour {
 
     public virtual void Start() {
         Time.timeScale = TimeScale;
-        var uuid = Guid.NewGuid().ToString();
+        envUUID = Guid.NewGuid().ToString();
         var type = SimulateMode == SimulateModeSetting.EvacueesOnly ? "EvacueesOnly" : "AgentsModel";
-        dataSavePath += $"{SceneManager.GetActiveScene().name}_{type}_{uuid}/";
+        dataSavePath += $"{SceneManager.GetActiveScene().name}_{type}_{envUUID}/";
         
         NavMesh.pathfindingIterationsPerFrame = 10000; //#47 パス検索の最大イテレーション数を設定
     
@@ -143,7 +144,7 @@ public abstract class EnvManager : MonoBehaviour {
             LimitTimeSec = LimitTimeSec;
         }
         totalElpTimeSec = 0;
-        m_ResetTimer = 0;
+        currentTimeSec = 0;
         InitEnv(); //継承先の子環境の初期化メソッド
         OnEpisodeInitialize?.Invoke(); // 環境準備完了のイベント発行
     }
@@ -154,7 +155,7 @@ public abstract class EnvManager : MonoBehaviour {
     }
 
     private void UpdateSimulate() {
-        m_ResetTimer += 1;
+        currentTimeSec += 1;
         totalElpTimeSec += Time.deltaTime;
         EvacuationRate = CalcEvacuationRate();
         if(TrainMode == TrainerMode.Inference) {
@@ -162,7 +163,7 @@ public abstract class EnvManager : MonoBehaviour {
         }
 
         bool allEvacuees = isEvacueeAll();
-        //bool shouldEndEpisode = m_ResetTimer >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0;
+        //bool shouldEndEpisode = currentTimeSec >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0;
         bool shouldEndEpisode = totalElpTimeSec >= LimitTimeSec && LimitTimeSec > 0;
         if (allEvacuees) {
             OnEvacueeAll?.Invoke(EvacuationRate);
@@ -179,7 +180,7 @@ public abstract class EnvManager : MonoBehaviour {
 
     private void HandleEndEpisode(float evacueeRate, bool isEvacueeAll) {
         var type = SimulateMode == SimulateModeSetting.EvacueesOnly ? "EvacueesOnly" : "AgentsModel";
-        var fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_evacuationRate.csv";
+        var fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_EnvEvacuationRate.csv";
         if(TrainMode == TrainerMode.Inference) {
             SaveDatas(dataSavePath + fileName);
         }
@@ -291,6 +292,10 @@ public abstract class EnvManager : MonoBehaviour {
         Agents.SetGroupReward(EvacuationRate * 100);
     }
 
+    /// <summary>
+    /// TODO : DataSaverクラスへの移行
+    /// </summary>
+    /// <param name="filePath"></param>
     private void SaveDatas(string filePath) {
         //フォルダが存在しない場合は作成
         if (!Directory.Exists(dataSavePath)) {
@@ -298,7 +303,7 @@ public abstract class EnvManager : MonoBehaviour {
         }
         using (StreamWriter writer = new StreamWriter(filePath)) {
             // 以下に記録したいデータを記述
-            writer.WriteLine("Evacuation Rate, Elapsed Sec");
+            writer.WriteLine("Elapsed Sec,Evacuation Rate");
             for(int i = 0; i < evacueeRateDatas.Count; i++) { 
                 writer.WriteLine($"{evacueeRateDatas[i][0]}, {evacueeRateDatas[i][1]}");
             }
@@ -306,5 +311,4 @@ public abstract class EnvManager : MonoBehaviour {
             Debug.Log($"Data saved to {filePath}");
         }
     }
-
 }

@@ -27,6 +27,14 @@ public class PLATEAUEnvManager : EnvManager {
     }
     public override void Start() {
         base.Start();
+        // 各タワーの初期化は初回のみ
+        var towers = GameObject.FindGameObjectsWithTag(Tags.Tower);
+        foreach(var towerObj in towers) {
+            Tower tower = towerObj.GetComponent<Tower>();
+            tower.uuid = Guid.NewGuid().ToString(); //TODO: PLATEAU UUIDに差し替え
+            Towers.Add(towerObj);
+        }
+
         // NOTE: 一部の建物にNavMeshObstacleコンポーネントがアタッチされており、避難者が動けない場合がある問題への対処
         GameObject[] allObjects = FindObjectsOfType<GameObject>();
         foreach (var obj in allObjects) {
@@ -40,7 +48,6 @@ public class PLATEAUEnvManager : EnvManager {
     
     public override void InitEnv() {
         DestroyEnv();
-        RegisterTowers();
 
         // 避難者のみモード & 避難者の初期位置が各個ランダム
         if(base.SimulateMode == SimulateModeSetting.EvacueesOnly && base.EvacueeSpawnPosMode == EvacueeSpawnModeSetting.SingleRandom) {
@@ -124,16 +131,6 @@ public class PLATEAUEnvManager : EnvManager {
     }
 
 
-    private void RegisterTowers() {
-        Towers.Clear();
-        var towers = GameObject.FindGameObjectsWithTag(Tags.Tower);
-        foreach(var towerObj in towers) {
-            Tower tower = towerObj.GetComponent<Tower>();
-            tower.uuid = Guid.NewGuid().ToString();
-            Towers.Add(towerObj);
-        }
-    }
-
     private void DestroyEnv() {
         RemoveObjectAll(Tags.Evacuee);
         
@@ -144,7 +141,7 @@ public class PLATEAUEnvManager : EnvManager {
         }
 
         Evacuees.Clear();
-        m_ResetTimer = 0;
+        currentTimeSec = 0;
         AgentGuidedCount = 0;
         Evacuees = new List<GameObject>();
     }
