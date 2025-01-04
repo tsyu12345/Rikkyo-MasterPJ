@@ -103,8 +103,7 @@ public abstract class EnvManager : MonoBehaviour {
     protected delegate void SpawnCallback(GameObject obj);
     private List<(float elapsedSec, float evacuationRate)> evacueeRateDatas = new List<(float elapsedSec, float evacuationRate)>();
     private int currentEpisodeCount = 0;
-    private string dataSavePath = "Assets/Datas/";
-
+    private string dataSavePath = Path.Combine(Application.dataPath, "Data/");
     /** 抽象メソッド */
     public abstract void InitEnv();
 
@@ -112,7 +111,7 @@ public abstract class EnvManager : MonoBehaviour {
         Time.timeScale = TimeScale;
         envUUID = Guid.NewGuid().ToString();
         var type = SimulateMode == SimulateModeSetting.EvacueesOnly ? "EvacueesOnly" : "AgentsModel";
-        dataSavePath += $"{SceneManager.GetActiveScene().name}_{type}_{envUUID}/";
+        dataSavePath = Path.Combine(dataSavePath, $"{SceneManager.GetActiveScene().name}_{type}_{envUUID}/");
         
         NavMesh.pathfindingIterationsPerFrame = 10000; //#47 パス検索の最大イテレーション数を設定
     
