@@ -101,7 +101,7 @@ public abstract class EnvManager : MonoBehaviour {
     public string envUUID;
     protected float totalElpTimeSec = 0.0f;
     protected delegate void SpawnCallback(GameObject obj);
-    private List<List<float>> evacueeRateDatas = new List<List<float>>();
+    private List<(float elapsedSec, float evacuationRate)> evacueeRateDatas = new List<(float elapsedSec, float evacuationRate)>();
     private int currentEpisodeCount = 0;
     private string dataSavePath = "Assets/Datas/";
 
@@ -159,7 +159,7 @@ public abstract class EnvManager : MonoBehaviour {
         totalElpTimeSec += Time.deltaTime;
         EvacuationRate = CalcEvacuationRate();
         if(TrainMode == TrainerMode.Inference) {
-            evacueeRateDatas.Add(new List<float> {EvacuationRate, totalElpTimeSec});        
+            evacueeRateDatas.Add((totalElpTimeSec, EvacuationRate));        
         }
 
         bool allEvacuees = isEvacueeAll();
@@ -177,13 +177,36 @@ public abstract class EnvManager : MonoBehaviour {
         }
     }
 
-
+    /// <summary>
+    /// エピソード終了時の処理
+    /// </summary>
     private void HandleEndEpisode(float evacueeRate, bool isEvacueeAll) {
-        var type = SimulateMode == SimulateModeSetting.EvacueesOnly ? "EvacueesOnly" : "AgentsModel";
-        var fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_EnvEvacuationRate.csv";
+        /** データ集計処理群*/
         if(TrainMode == TrainerMode.Inference) {
-            SaveDatas(dataSavePath + fileName);
+            var type = SimulateMode == SimulateModeSetting.EvacueesOnly ? "EvacueesOnly" : "AgentsModel";
+            /**環境全体の避難率推移の集計*/
+            var folder = Path.Combine(dataSavePath, "EnvEvacuationRate/");
+            var fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_EnvEvacuationRate.csv";
+            var path = folder + fileName;
+            var header = new string[] {"Elapsed Sec", "Evacuation Rate"};
+            DataSaver.SaveData2CSV(path, header, evacueeRateDatas, (data) => {
+                return new string[] {data.elapsedSec.ToString(), data.evacuationRate.ToString()};
+            });
+
+            /** 各避難所毎の収容人数の推移の集計 */
+            folder = Path.Combine(dataSavePath, "TowerEvacueeCount/");
+            fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_TowerEvacueeCount.csv";
+            path = folder + fileName;
+            header = new string[] {"Elapsed Sec", "Evacuee Count"};
+            foreach(GameObject shelterObj in Towers) {
+                Tower shelter = shelterObj.GetComponent<Tower>();
+                DataSaver.SaveData2CSV(path, header, shelter.ElapsedAccData, (data) => {
+                    return new string[] {data.elapsedSec.ToString(), data.accCount.ToString()};
+                });
+            }
         }
+
+
         if(SimulateMode == SimulateModeSetting.AgentsModel) {
             // エージェントのエピソード終了処理を発行
             foreach(GameObject drone in Drones) {
@@ -292,23 +315,4 @@ public abstract class EnvManager : MonoBehaviour {
         Agents.SetGroupReward(EvacuationRate * 100);
     }
 
-    /// <summary>
-    /// TODO : DataSaverクラスへの移行
-    /// </summary>
-    /// <param name="filePath"></param>
-    private void SaveDatas(string filePath) {
-        //フォルダが存在しない場合は作成
-        if (!Directory.Exists(dataSavePath)) {
-            Directory.CreateDirectory(dataSavePath);
-        }
-        using (StreamWriter writer = new StreamWriter(filePath)) {
-            // 以下に記録したいデータを記述
-            writer.WriteLine("Elapsed Sec,Evacuation Rate");
-            for(int i = 0; i < evacueeRateDatas.Count; i++) { 
-                writer.WriteLine($"{evacueeRateDatas[i][0]}, {evacueeRateDatas[i][1]}");
-            }
-            writer.Close();
-            Debug.Log($"Data saved to {filePath}");
-        }
-    }
 }

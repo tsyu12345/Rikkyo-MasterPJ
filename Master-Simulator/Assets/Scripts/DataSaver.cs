@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -11,13 +12,16 @@ public class DataSaver {
     /// <summary>
     /// 任意のデータをCSV形式で保存します。
     /// </summary>
+    /// <typeparam name="T">保存するデータの型</typeparam>
     /// <param name="filePath">保存先のファイルパス</param>
     /// <param name="header">CSVのヘッダー行</param>
-    /// <param name="data">保存するデータのリスト（各行は文字列配列として渡す）</param>
-    public static void SaveData(string filePath, string[] header, List<string[]> data) {
-        // フォルダが存在しない場合は作成
-        if (!Directory.Exists(filePath)) {
-            Directory.CreateDirectory(filePath);
+    /// <param name="data">保存するデータのリスト</param>
+    /// <param name="convertToRow">データ型 T を文字列配列に変換する関数</param>
+    public static void SaveData2CSV<T>(string filePath, string[] header, List<T> data, Func<T, string[]> convertToRow) {
+        // 保存先フォルダのディレクトリパスを取得
+        string directoryPath = Path.GetDirectoryName(filePath);
+        if (!Directory.Exists(directoryPath)) {
+            Directory.CreateDirectory(directoryPath);
         }
 
         using (StreamWriter writer = new StreamWriter(filePath)) {
@@ -27,12 +31,13 @@ public class DataSaver {
             }
 
             // データを記録
-            foreach (var row in data) {
+            foreach (var item in data) {
+                string[] row = convertToRow(item); // データを文字列配列に変換
                 writer.WriteLine(string.Join(",", row));
             }
 
             Debug.Log($"Data saved to {filePath}");
         }
     }
-
 }
+

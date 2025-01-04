@@ -12,9 +12,7 @@ public class Tower : MonoBehaviour{
     public int NowAccCount; //現在の収容人数
     public int currentCapacity; //現在の受け入れ可能人数：最大収容人数 - 現在の収容人数
     [HideInInspector]
-    public List<List<float>> totalEvacuateData = new List<List<float>>(); // [0]:時間（秒）, [1]:避難者数
-
-
+    public List<(float elapsedSec, int accCount)> ElapsedAccData = new List<(float, int)>(); //推論モード時の避難者数記録
     public string uuid; //タワーの識別子
 
     private string LogPrefix = "Tower: ";
@@ -37,7 +35,7 @@ public class Tower : MonoBehaviour{
         ExMark.enabled = false;
         _env = GetComponentInParent<EnvManager>();
         _env.OnEpisodeInitialize += () => {
-            totalEvacuateData.Clear();
+            ElapsedAccData.Clear();
         };
         _env.OnEndEpisode += (float _) => {
             NowAccCount = 0;
@@ -54,7 +52,7 @@ public class Tower : MonoBehaviour{
 
         // 推論モードの場合は１秒おきに避難者数を記録
         if(_env.TrainMode == EnvManager.TrainerMode.Inference) {
-            totalEvacuateData.Add(new List<float> {Time.time, NowAccCount});
+            ElapsedAccData.Add((_env.currentTimeSec, NowAccCount));
         }
 
     }
