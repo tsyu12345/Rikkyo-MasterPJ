@@ -42,7 +42,7 @@ public abstract class EnvManager : MonoBehaviour {
     public SimulateModeSetting SimulateMode = SimulateModeSetting.EvacueesOnly;
     [Tooltip("避難者のスポーンモードの選択。SingleRandomはランダムな位置に一人ずつ、Groupは集団単位でスポーン")]
     public EvacueeSpawnModeSetting EvacueeSpawnPosMode = EvacueeSpawnModeSetting.SingleRandom;
-    [Tooltip("トレーニングモードか推論モードかの選択。トレーニングモードの時はデータ記録を行いません")]
+    [Tooltip("トレーニングモードか推論モードかの選択。")]
     public TrainerMode TrainMode = TrainerMode.Train;
     [Tooltip("避難者のスピード設定。Randomは個体毎にランダムなスピード、Constantは全個体一定のスピード")]
     public EvacueeSpeedSetting EvacueeSpeedMode = EvacueeSpeedSetting.Random;
@@ -97,21 +97,26 @@ public abstract class EnvManager : MonoBehaviour {
     public EpisodeInitializeHandler OnEpisodeInitialize;
 
     private SimpleMultiAgentGroup Agents;
-    public float currentTimeSec;
     public string envUUID;
-    protected float totalElpTimeSec = 0.0f;
+    public float currentTimeSec = 0.0f;
     protected delegate void SpawnCallback(GameObject obj);
     private List<(float elapsedSec, float evacuationRate)> evacueeRateDatas = new List<(float elapsedSec, float evacuationRate)>();
     private int currentEpisodeCount = 0;
     private string dataSavePath = Path.Combine(Application.dataPath, "Data/");
-    /** 抽象メソッド */
+    private List<(
+        float limitSec, 
+        float endSec,
+        int totalEvacueeCount, 
+        int dronesCount, 
+        float finalEvacuateRate
+        )> episodeDatas = new List<(float limitSec, float endSec, int totalEvacueeCount, int dronesCount, float finalEvacuateRate)>();
     public abstract void InitEnv();
 
     public virtual void Start() {
         Time.timeScale = TimeScale;
         envUUID = Guid.NewGuid().ToString();
         var type = SimulateMode == SimulateModeSetting.EvacueesOnly ? "EvacueesOnly" : "AgentsModel";
-        dataSavePath = Path.Combine(dataSavePath, $"{SceneManager.GetActiveScene().name}_{type}_{envUUID}/");
+        dataSavePath = Path.Combine(dataSavePath, $"{SceneManager.GetActiveScene().name}_{type}_{Enum.GetName(typeof(TrainerMode), TrainMode)}_{envUUID}/");
         
         NavMesh.pathfindingIterationsPerFrame = 10000; //#47 パス検索の最大イテレーション数を設定
     
@@ -125,6 +130,18 @@ public abstract class EnvManager : MonoBehaviour {
     void FixedUpdate() {
         UpdateSimulate();
         UpdateUI();
+    }
+
+    void OnApplicationQuit() {
+        
+        var type = SimulateMode == SimulateModeSetting.EvacueesOnly ? "EvacueesOnly" : "AgentsModel";
+        var fileName = $"{SceneManager.GetActiveScene().name}_{type}_EpisodeSummary.csv";
+        var path = Path.Combine(dataSavePath, fileName);
+        var header = new string[] {"Limit Time", "End Time Sec","Total Evacuee Count", "Drone Count", "Final Evacuate Rate"};
+        DataSaver.SaveData2CSV(path, header, episodeDatas, (data) => {
+            return new string[] {data.limitSec.ToString(), data.endSec.ToString(), data.totalEvacueeCount.ToString(), data.dronesCount.ToString(), data.finalEvacuateRate.ToString()};
+        });
+
     }
 
     /// <summary>
@@ -142,7 +159,6 @@ public abstract class EnvManager : MonoBehaviour {
         } else { // 固定値の制限時間
             LimitTimeSec = LimitTimeSec;
         }
-        totalElpTimeSec = 0;
         currentTimeSec = 0;
         InitEnv(); //継承先の子環境の初期化メソッド
         OnEpisodeInitialize?.Invoke(); // 環境準備完了のイベント発行
@@ -154,16 +170,13 @@ public abstract class EnvManager : MonoBehaviour {
     }
 
     private void UpdateSimulate() {
-        currentTimeSec += 1;
-        totalElpTimeSec += Time.deltaTime;
+        currentTimeSec += Time.deltaTime;
         EvacuationRate = CalcEvacuationRate();
-        if(TrainMode == TrainerMode.Inference) {
-            evacueeRateDatas.Add((totalElpTimeSec, EvacuationRate));        
-        }
+        evacueeRateDatas.Add((currentTimeSec, EvacuationRate));        
 
         bool allEvacuees = isEvacueeAll();
         //bool shouldEndEpisode = currentTimeSec >= MaxEnvironmentSteps && MaxEnvironmentSteps > 0;
-        bool shouldEndEpisode = totalElpTimeSec >= LimitTimeSec && LimitTimeSec > 0;
+        bool shouldEndEpisode = currentTimeSec >= LimitTimeSec && LimitTimeSec > 0;
         if (allEvacuees) {
             OnEvacueeAll?.Invoke(EvacuationRate);
         } else if (SimulateMode == SimulateModeSetting.AgentsModel) {
@@ -179,32 +192,46 @@ public abstract class EnvManager : MonoBehaviour {
     /// <summary>
     /// エピソード終了時の処理
     /// </summary>
-    private void HandleEndEpisode(float evacueeRate, bool isEvacueeAll) {
+    private void HandleEndEpisode(float evacueeRate, float endTimeSec, bool isEvacueeAll) {
         /** データ集計処理群*/
-        if(TrainMode == TrainerMode.Inference) {
-            var type = SimulateMode == SimulateModeSetting.EvacueesOnly ? "EvacueesOnly" : "AgentsModel";
-            /**環境全体の避難率推移の集計*/
-            var folder = Path.Combine(dataSavePath, "EnvEvacuationRate/");
-            var fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_EnvEvacuationRate.csv";
-            var path = folder + fileName;
-            var header = new string[] {"Elapsed Sec", "Evacuation Rate"};
-            DataSaver.SaveData2CSV(path, header, evacueeRateDatas, (data) => {
-                return new string[] {data.elapsedSec.ToString(), data.evacuationRate.ToString()};
-            });
+    
+        var type = SimulateMode == SimulateModeSetting.EvacueesOnly ? "EvacueesOnly" : "AgentsModel";
+        /**環境全体の避難率推移の集計*/
+        var folder = Path.Combine(dataSavePath, "EnvEvacuationRate/");
+        var fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_EnvEvacuationRate.csv";
+        var path = folder + fileName;
+        var header = new string[] {"Elapsed Sec", "Evacuation Rate"};
+        DataSaver.SaveData2CSV(path, header, evacueeRateDatas, (data) => {
+            return new string[] {data.elapsedSec.ToString(), data.evacuationRate.ToString()};
+        });
 
-            /** 各避難所毎の収容人数の推移の集計 */
-            folder = Path.Combine(dataSavePath, "TowerEvacueeCount/");
-            fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_TowerEvacueeCount.csv";
+        /** 各避難所毎の収容人数の推移の集計 */
+        folder = Path.Combine(dataSavePath, "TowerEvacueeCount/");
+        fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_TowerEvacueeCount.csv";
+        path = folder + fileName;
+        header = new string[] {"Elapsed Sec", "Evacuee Count"};
+        foreach(GameObject shelterObj in Towers) {
+            Tower shelter = shelterObj.GetComponent<Tower>();
+            DataSaver.SaveData2CSV(path, header, shelter.ElapsedAccData, (data) => {
+                return new string[] {data.elapsedSec.ToString(), data.accCount.ToString()};
+            });
+        }
+
+        /** エージェントの行動ログの集計 */
+        if(SimulateMode == SimulateModeSetting.AgentsModel) {
+            folder = Path.Combine(dataSavePath, "AgentActionLogs/");
+            fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_AgentActionLogs.csv";
             path = folder + fileName;
-            header = new string[] {"Elapsed Sec", "Evacuee Count"};
-            foreach(GameObject shelterObj in Towers) {
-                Tower shelter = shelterObj.GetComponent<Tower>();
-                DataSaver.SaveData2CSV(path, header, shelter.ElapsedAccData, (data) => {
-                    return new string[] {data.elapsedSec.ToString(), data.accCount.ToString()};
+            header = new string[] {"Elapsed Sec", "Destination", "Speed", "Guided Evacuees"};
+            foreach(GameObject drone in Drones) {
+                DroneNavAgent agent = drone.GetComponent<DroneNavAgent>();
+                DataSaver.SaveData2CSV(path, header, agent.actionLogs, (data) => {
+                    return new string[] {data.elapsedSec.ToString(), data.destination, data.speed.ToString(), data.guidedCount.ToString()};
                 });
             }
         }
-
+        
+        episodeDatas.Add((LimitTimeSec, endTimeSec, Evacuees.Count, Drones.Count, evacueeRate)); 
 
         if(SimulateMode == SimulateModeSetting.AgentsModel) {
             // エージェントのエピソード終了処理を発行
@@ -226,10 +253,10 @@ public abstract class EnvManager : MonoBehaviour {
 
     private void SetEpisodeEndHandlers() {
         OnEvacueeAll += (evacueeRate) => {
-            HandleEndEpisode(evacueeRate, true);
+            HandleEndEpisode(evacueeRate, currentTimeSec, true);
         };
         OnEndEpisode += (evacueeRate) => {
-            HandleEndEpisode(evacueeRate, false);
+            HandleEndEpisode(evacueeRate, LimitTimeSec, false);
         };
     }
 
@@ -286,7 +313,7 @@ public abstract class EnvManager : MonoBehaviour {
 
     private void UpdateUI() {
         if (stepCounter != null) {
-            stepCounter.text = $"Remain Seconds : {LimitTimeSec - totalElpTimeSec}";
+            stepCounter.text = $"Remain Seconds : {LimitTimeSec - currentTimeSec}";
         }
         if (evacRateCounter != null) {
             int currentRate = (int)(EvacuationRate * 100);

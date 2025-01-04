@@ -50,10 +50,8 @@ public class Tower : MonoBehaviour{
             ExMark.enabled = true;
         }
 
-        // 推論モードの場合は１秒おきに避難者数を記録
-        if(_env.TrainMode == EnvManager.TrainerMode.Inference) {
-            ElapsedAccData.Add((_env.currentTimeSec, NowAccCount));
-        }
+        
+        ElapsedAccData.Add((_env.currentTimeSec, NowAccCount));
 
     }
 

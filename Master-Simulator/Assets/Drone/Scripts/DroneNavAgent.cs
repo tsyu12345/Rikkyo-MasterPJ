@@ -24,6 +24,7 @@ public class DroneNavAgent : Agent {
     
     private EnvManager _env;
     public NavController _controller;
+    public List<(float elapsedSec, string destination, float speed, int guidedCount)> actionLogs = new List<(float, string, float, int)>();
 
     private string LogPrefix = "DroneAgent: ";
 
@@ -141,9 +142,15 @@ public class DroneNavAgent : Agent {
             RequestDecision();
         }
 
-        //var mode = actions.DiscreteActions[(int)NavAgentCtrlIndex.FlyMode];
-        // FlyMode = mode;
-        //Target = mode == 1 ? _controller.Targets[currentTarget] : null;
+        // #73 : エージェントの行動集計処理
+        actionLogs.Add((
+            _env.currentTimeSec,
+            Target.name,
+            _controller.NavAgent.speed, 
+            currentGuidedEvacuees.Count
+        ));
+
+        
     }
 
 
@@ -205,6 +212,7 @@ public class DroneNavAgent : Agent {
         _controller.batteryLevel = 100;
         currentGuidedEvacuees.Clear();
         currentGuidedEvacuees = new List<GameObject>();
+        actionLogs.Clear();
         guidedCount = 0;
     }
 
