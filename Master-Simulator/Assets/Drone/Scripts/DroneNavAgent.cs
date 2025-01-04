@@ -51,6 +51,7 @@ public class DroneNavAgent : Agent {
 
         _env.OnEpisodeInitialize += () => {
             _controller.Targets = _env.Towers;
+            RequestDecision();
         };
 
         onAddEvacuee += () => {
@@ -74,7 +75,6 @@ public class DroneNavAgent : Agent {
 
     public override void OnEpisodeBegin() {
         Reset();
-        RequestDecision();
     }
 
     /// <summary>
@@ -92,8 +92,18 @@ public class DroneNavAgent : Agent {
         sensor.AddObservation(_controller.NavAgent.speed);
         //sensor.AddObservation(FlyMode);
         sensor.AddObservation(Target == null ? Vector3.zero : Target.transform.position);
-        //現在誘導している避難者の数を観測情報に追加
-        sensor.AddObservation(currentGuidedEvacuees.Count);
+        //現在誘導している避難者の数, 移動速度平均を観測情報に追加
+        sensor.AddObservation(currentGuidedEvacuees.Count); //FIXME : 初回の環境観測が正常に行えていない
+        float sumSpeed = 0.0f;
+        foreach(GameObject evacuee in currentGuidedEvacuees) {
+            var evacueeComp = evacuee.GetComponent<Evacuee>();
+            sumSpeed += evacueeComp.Speed;
+        }
+        float avgSpeed = 0.0f;
+        if(currentGuidedEvacuees.Count > 0) {
+            avgSpeed = sumSpeed / currentGuidedEvacuees.Count;
+        }
+        sensor.AddObservation(avgSpeed);
         
         // #66 制限時間を観測情報に追加
         sensor.AddObservation(_env.LimitTimeSec);
@@ -128,6 +138,7 @@ public class DroneNavAgent : Agent {
     /// <param name="actions"></param>
     public override void OnActionReceived(ActionBuffers actions) {
         var currentTargetIdx = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
+        var currentSpeedIdx = actions.DiscreteActions[(int)NavAgentCtrlIndex.Speed];
         Target = _env.Towers[currentTargetIdx];
         _controller.NavAgent.SetDestination(Target.transform.position);
         _controller.FlyingCtrl(actions);

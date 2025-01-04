@@ -18,13 +18,13 @@ namespace Constants {
     /// </summary>
     public enum NavAgentCtrlIndex {
         // ContinuousActions
-        Speed = 0,
         /** 探索行動時における、座標出力用 */
         PosX  = 1,
         PosZ = 2,
         // DiscreteActions
         //FlyMode = 0,
         Destination = 0,
+        Speed = 1,
     }
 
     public enum DroneCtrlIndex {
