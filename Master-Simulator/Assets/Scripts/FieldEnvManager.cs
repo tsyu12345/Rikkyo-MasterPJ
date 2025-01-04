@@ -47,7 +47,7 @@ public class FieldEnvManager : EnvManager {
         Towers.Clear();
         Evacuees.Clear();
 
-        m_ResetTimer = 0;
+        currentTimeSec = 0;
         AgentGuidedCount = 0;
         Evacuees = new List<GameObject>();
         Towers = new List<GameObject>();
