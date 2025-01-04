@@ -104,7 +104,6 @@ public abstract class EnvManager : MonoBehaviour {
     private List<(float elapsedSec, float evacuationRate)> evacueeRateDatas = new List<(float elapsedSec, float evacuationRate)>();
     private int currentEpisodeCount = 0;
     private string dataSavePath = Path.Combine(Application.dataPath, "Data/");
-    /** 抽象メソッド */
     public abstract void InitEnv();
 
     public virtual void Start() {
@@ -202,6 +201,20 @@ public abstract class EnvManager : MonoBehaviour {
                 DataSaver.SaveData2CSV(path, header, shelter.ElapsedAccData, (data) => {
                     return new string[] {data.elapsedSec.ToString(), data.accCount.ToString()};
                 });
+            }
+
+            /** エージェントの行動ログの集計 */
+            if(SimulateMode == SimulateModeSetting.AgentsModel) {
+                folder = Path.Combine(dataSavePath, "AgentActionLogs/");
+                fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_AgentActionLogs.csv";
+                path = folder + fileName;
+                header = new string[] {"Elapsed Sec", "Destination", "Speed", "Guided Evacuees"};
+                foreach(GameObject drone in Drones) {
+                    DroneNavAgent agent = drone.GetComponent<DroneNavAgent>();
+                    DataSaver.SaveData2CSV(path, header, agent.actionLogs, (data) => {
+                        return new string[] {data.elapsedSec.ToString(), data.destination, data.speed.ToString(), data.guidedCount.ToString()};
+                    });
+                }
             }
         }
 
