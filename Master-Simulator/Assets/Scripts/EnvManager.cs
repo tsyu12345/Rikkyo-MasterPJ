@@ -234,16 +234,16 @@ public abstract class EnvManager : MonoBehaviour {
         episodeDatas.Add((LimitTimeSec, endTimeSec, Evacuees.Count, Drones.Count, evacueeRate)); 
 
         if(SimulateMode == SimulateModeSetting.AgentsModel) {
-            // エージェントのエピソード終了処理を発行
-            foreach(GameObject drone in Drones) {
-                var agent = drone.GetComponent<DroneNavAgent>();
-                agent.OnEndEpisodeHandler(evacueeRate);
-            }
             AddGroupReward();
             if(isEvacueeAll) {
                 Agents.EndGroupEpisode();
             } else {
                 Agents.GroupEpisodeInterrupted();
+            }
+            // エージェントのエピソード終了処理を発行
+            foreach(GameObject drone in Drones) {
+                var agent = drone.GetComponent<DroneNavAgent>();
+                agent.OnEndEpisodeHandler(evacueeRate);
             }
         }
         currentEpisodeCount++;

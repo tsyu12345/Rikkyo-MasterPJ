@@ -9,6 +9,11 @@ using Constants;
 /// 避難者に関するスクリプト
 /// </summary>
 public class Evacuee : MonoBehaviour {
+    public enum EvacueeModelModes {
+        Guided,
+        Search
+    }
+    public EvacueeModelModes ModelMode = EvacueeModelModes.Guided;
     public GameObject Field;
     [Header("Evacuee Parameters")]
     public int Age; // 年齢
@@ -62,13 +67,12 @@ public class Evacuee : MonoBehaviour {
                 }
             }
         } else {
-            TrackingDrone();
+            // TrackingDrone();
         }
 
-
-        if(FollowTarget != null) {
-            Move();
-        }
+        
+        Move();
+        
         IsPathFind = navMeshAgent.pathPending ? false : true;
         navMeshAgent.speed = Speed;
     }
@@ -81,7 +85,7 @@ public class Evacuee : MonoBehaviour {
     }
 
     void OnTriggerEnter(Collider other) {
-        Debug.Log(LogPrefix + "OnTriggerEnter: " + other.tag);
+        //Debug.Log(LogPrefix + "OnTriggerEnter: " + other.tag);
     }
 
     /// <summary>
@@ -99,6 +103,7 @@ public class Evacuee : MonoBehaviour {
                 //誘導されていたドローンエージェントのカウントを更新
                 var agent = followedDrone.GetComponent<DroneNavAgent>();
                 agent.guidedCount += 1;
+                agent.AddReward(1.0f);
                 SendRemoveSignalForDrone(followedDrone);
             }
             gameObject.SetActive(false);
@@ -145,7 +150,7 @@ public class Evacuee : MonoBehaviour {
         }
     }
 
-    private void TrackingDrone() {
+    public void TrackingDrone() {
         // 最短距離のドローンを探す
         GameObject[] agents = GameObject.FindGameObjectsWithTag(Tags.Agent);
         List<GameObject> sortedAgents = new List<GameObject>();

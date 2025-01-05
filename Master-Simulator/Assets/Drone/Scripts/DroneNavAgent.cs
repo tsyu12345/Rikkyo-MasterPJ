@@ -5,6 +5,7 @@ using TMPro;
 using Unity.MLAgents;
 using Unity.MLAgents.Actuators;
 using Unity.MLAgents.Sensors;
+using Unity.MLAgents.Policies;
 using UnityEngine.AI;
 using UtilityFuncs;
 using Constants;
@@ -57,6 +58,7 @@ public class DroneNavAgent : Agent {
 
         onAddEvacuee += () => {
             // AddReward(0.1f);
+            Debug.Log(LogPrefix + "Evacuee Added.");
         };
     }
 
@@ -75,7 +77,7 @@ public class DroneNavAgent : Agent {
     }
 
     public override void OnEpisodeBegin() {
-        Reset();
+        //Reset();
     }
 
     /// <summary>
@@ -132,6 +134,16 @@ public class DroneNavAgent : Agent {
 
     }
 
+    public override void WriteDiscreteActionMask(IDiscreteActionMask actionMask) {
+        // #55 : 受け入れ不可能なタワーを選択した場合、行動マスクを設定し、エージェントが選択しないようにする
+        foreach (var towerObj in _env.Towers) {
+            Tower tower = towerObj.GetComponent<Tower>();
+            if(tower.currentCapacity <= 0) {
+                actionMask.SetActionEnabled((int)NavAgentCtrlIndex.Destination, _env.Towers.IndexOf(towerObj), false);
+            }
+        }
+    }
+
     /// <summary>
     /// 1. 速度調節 - 連続値
     /// 2. 高度調節 - 連続値
@@ -139,18 +151,27 @@ public class DroneNavAgent : Agent {
     /// <param name="actions"></param>
     public override void OnActionReceived(ActionBuffers actions) {
         var currentTargetIdx = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
-        var currentSpeedIdx = actions.DiscreteActions[(int)NavAgentCtrlIndex.Speed];
+        var currentSpeed = ScaleAction(actions.ContinuousActions[(int)NavAgentCtrlIndex.Speed], 0, 3);
+
         Target = _env.Towers[currentTargetIdx];
         _controller.NavAgent.SetDestination(Target.transform.position);
-        _controller.FlyingCtrl(actions);
+        _controller.NavAgent.speed = currentSpeed;
+        //_controller.FlyingCtrl(actions);
 
         // #55 : 受け入れ不可能なタワーを選択した場合、負の報酬を与えてエピソードを終了（エージェント無効化）する
         Tower destinationTower = Target.GetComponent<Tower>();
-        if(destinationTower.currentCapacity <= 0) {
+        if(destinationTower.currentCapacity <= 0 && currentGuidedEvacuees.Count > 0) {
             SetReward(-1f);
+            Debug.Log(LogPrefix + "Invalid Destination Tower Selected. Request New Decision.");
             //_env.UnregisterAgent(this.gameObject);
             //gameObject.SetActive(false);
             RequestDecision();
+        }
+        // #75 : 全ての避難者を誘導した場合、エピソードを終了する
+        if(currentGuidedEvacuees.Count == 0) {
+            Debug.Log(LogPrefix + "All Evacuees Guided. Episode End.");
+            _env.UnregisterAgent(this.gameObject);
+            gameObject.SetActive(false);
         }
 
         // #73 : エージェントの行動集計処理
@@ -207,8 +228,9 @@ public class DroneNavAgent : Agent {
             SetReward(guidedCount);
             _env.AgentGuidedCount += guidedCount;
         } else {
-            SetReward(-1f);
+            SetReward(-100f);
         }
+        Reset();
     }
 
     private void Reset() {
@@ -225,6 +247,7 @@ public class DroneNavAgent : Agent {
         currentGuidedEvacuees = new List<GameObject>();
         actionLogs.Clear();
         guidedCount = 0;
+        this.gameObject.SetActive(true);
     }
 
 
