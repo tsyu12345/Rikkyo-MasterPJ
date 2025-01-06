@@ -206,11 +206,12 @@ public abstract class EnvManager : MonoBehaviour {
         });
 
         /** 各避難所毎の収容人数の推移の集計 */
-        folder = Path.Combine(dataSavePath, "TowerEvacueeCount/");
+        var parentFolder = Path.Combine(dataSavePath, "TowerEvacueeCount/");
         fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_TowerEvacueeCount.csv";
-        path = folder + fileName;
         header = new string[] {"Elapsed Sec", "Evacuee Count"};
         foreach(GameObject shelterObj in Towers) {
+            folder = Path.Combine(parentFolder, $"{shelterObj.name}/");
+            path = folder + fileName;
             Tower shelter = shelterObj.GetComponent<Tower>();
             DataSaver.SaveData2CSV(path, header, shelter.ElapsedAccData, (data) => {
                 return new string[] {data.elapsedSec.ToString(), data.accCount.ToString()};
@@ -219,11 +220,12 @@ public abstract class EnvManager : MonoBehaviour {
 
         /** エージェントの行動ログの集計 */
         if(SimulateMode == SimulateModeSetting.AgentsModel) {
-            folder = Path.Combine(dataSavePath, "AgentActionLogs/");
+            parentFolder = Path.Combine(dataSavePath, "AgentActionLogs/");
             fileName = $"{SceneManager.GetActiveScene().name}_{type}_Ep-{currentEpisodeCount}_AgentActionLogs.csv";
-            path = folder + fileName;
             header = new string[] {"Elapsed Sec", "Destination", "Speed", "Guided Evacuees"};
             foreach(GameObject drone in Drones) {
+                folder = Path.Combine(parentFolder, $"{drone.name}/");
+                path = folder + fileName;
                 DroneNavAgent agent = drone.GetComponent<DroneNavAgent>();
                 DataSaver.SaveData2CSV(path, header, agent.actionLogs, (data) => {
                     return new string[] {data.elapsedSec.ToString(), data.destination, data.speed.ToString(), data.guidedCount.ToString()};

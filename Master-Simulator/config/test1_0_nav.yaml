@@ -4,20 +4,20 @@ behaviors:
     hyperparameters:
       batch_size: 2048
       buffer_size: 20480
-      learning_rate: 0.00001
-      beta: 0.001
-      epsilon: 0.3
+      learning_rate: 0.00002
+      beta: 0.0005
+      epsilon: 0.1
       lambd: 0.99
-      num_epoch: 3
+      num_epoch: 5
       learning_rate_schedule: linear
     network_settings:
       normalize: false
-      hidden_units: 512
+      hidden_units: 1024
       num_layers: 2
       vis_encode_type: nature_cnn
     reward_signals:
       extrinsic:
-        gamma: 0.99
+        gamma: 0.95
         strength: 1.0
     keep_checkpoints: 5
     max_steps: 50000000

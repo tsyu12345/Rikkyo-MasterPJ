@@ -140,6 +140,9 @@ public class DroneNavAgent : Agent {
             Tower tower = towerObj.GetComponent<Tower>();
             if(tower.currentCapacity <= 0) {
                 actionMask.SetActionEnabled((int)NavAgentCtrlIndex.Destination, _env.Towers.IndexOf(towerObj), false);
+            } else {
+                // #76 キャパシティが0以上の場合、行動マスクを解除
+                actionMask.SetActionEnabled((int)NavAgentCtrlIndex.Destination, _env.Towers.IndexOf(towerObj), true);
             }
         }
     }
