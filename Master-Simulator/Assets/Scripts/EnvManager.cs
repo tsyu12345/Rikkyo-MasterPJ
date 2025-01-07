@@ -51,6 +51,8 @@ public abstract class EnvManager : MonoBehaviour {
     [Header("避難者スポーン設定")]
     public int EvacueeSpawnSizePerDroneMin = 10;
     public int EvacueeSpawnSizePerDroneMax = 20;
+    [Tooltip("この値の人数を満たすように、上記の人数範囲で避難者をスポーン")]
+    public int TotalEvacueeSize = 100;
     [Header("避難者スピード設定")]
     public float EvacueeSpeedMin = 5.0f;
     public float EvacueeSpeedMax = 15.0f;
@@ -102,7 +104,7 @@ public abstract class EnvManager : MonoBehaviour {
     protected delegate void SpawnCallback(GameObject obj);
     private List<(float elapsedSec, float evacuationRate)> evacueeRateDatas = new List<(float elapsedSec, float evacuationRate)>();
     private int currentEpisodeCount = 0;
-    private string dataSavePath = Path.Combine(Application.dataPath, "Data/");
+    private string dataSavePath = Path.Combine(Application.dataPath, $"Data_{DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss")}/");
     private List<(
         float limitSec, 
         float endSec,
@@ -110,6 +112,7 @@ public abstract class EnvManager : MonoBehaviour {
         int dronesCount, 
         float finalEvacuateRate
         )> episodeDatas = new List<(float limitSec, float endSec, int totalEvacueeCount, int dronesCount, float finalEvacuateRate)>();
+    private float previousEvacuateRate = 0.0f;
     public abstract void InitEnv();
 
     public virtual void Start() {
@@ -160,6 +163,13 @@ public abstract class EnvManager : MonoBehaviour {
             LimitTimeSec = LimitTimeSec;
         }
         currentTimeSec = 0;
+        // 各避難所のリセット
+        foreach(GameObject shelterObj in Towers) {
+            Tower shelter = shelterObj.GetComponent<Tower>();
+            shelter.NowAccCount = 0;
+            shelter.ExMark.enabled = false;
+            shelter.ElapsedAccData.Clear();
+        }
         InitEnv(); //継承先の子環境の初期化メソッド
         OnEpisodeInitialize?.Invoke(); // 環境準備完了のイベント発行
     }
@@ -232,20 +242,23 @@ public abstract class EnvManager : MonoBehaviour {
                 });
             }
         }
-        
         episodeDatas.Add((LimitTimeSec, endTimeSec, Evacuees.Count, Drones.Count, evacueeRate)); 
 
         if(SimulateMode == SimulateModeSetting.AgentsModel) {
-            AddGroupReward();
-            if(isEvacueeAll) {
-                Agents.EndGroupEpisode();
-            } else {
-                Agents.GroupEpisodeInterrupted();
-            }
+            // グループ報酬の付与
+            Agents.SetGroupReward(EvacuationRate);
+            // かかった時間が短いほど報酬を与える
+            Agents.AddGroupReward(1 - (float)endTimeSec / LimitTimeSec);
             // エージェントのエピソード終了処理を発行
             foreach(GameObject drone in Drones) {
                 var agent = drone.GetComponent<DroneNavAgent>();
-                agent.OnEndEpisodeHandler(evacueeRate);
+                agent.Reset();
+            }
+            //AddGroupReward();
+            if(isEvacueeAll) {
+                Agents.GroupEpisodeInterrupted();
+            } else {
+                Agents.EndGroupEpisode();
             }
         }
         currentEpisodeCount++;
@@ -334,13 +347,6 @@ public abstract class EnvManager : MonoBehaviour {
             }
         }
         return (float)evacuatedCount / Evacuees.Count;
-    }
-
-    /// <summary>
-    /// グループ報酬の報酬関数
-    /// </summary>
-    private void AddGroupReward() {
-        Agents.SetGroupReward(EvacuationRate * 100);
     }
 
 }

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 using Unity.MLAgents;
 using UnityEngine;
 using Constants;
@@ -17,7 +18,6 @@ public class PLATEAUEnvManager : EnvManager {
     [Header("Evacuees Spawn Settings")]
     public float EvacueeSpawnRadius = 10.0f; // ランダム生成範囲の半径
     public Vector3 SpawnCenter = Vector3.zero; // スポーンエリアの中心位置
-    public int EvacueeSize = 100; // 避難者の数
 
     private Color gizmoColor = Color.red; // エディタ上でスポーン範囲を示す線の色
 
@@ -49,20 +49,23 @@ public class PLATEAUEnvManager : EnvManager {
     public override void InitEnv() {
         DestroyEnv();
 
+
         // 避難者のみモード & 避難者の初期位置が各個ランダム
         if(base.SimulateMode == SimulateModeSetting.EvacueesOnly && base.EvacueeSpawnPosMode == EvacueeSpawnModeSetting.SingleRandom) {
-            for(int i = 0; i < EvacueeSize; i++) {
+            for(int i = 0; i < base.TotalEvacueeSize; i++) {
                 // 赤円内のナビメッシュ上のランダムな位置に避難者を生成
                 SpawnEvacueeOnNavMesh();
             }
         // 避難者のみモード & 避難者の初期位置がグループ毎ランダムの場合
         } else if(base.SimulateMode == SimulateModeSetting.EvacueesOnly && base.EvacueeSpawnPosMode == EvacueeSpawnModeSetting.Group) {
+            var evacueeSizePerDrone = GetRandomEvacueeSizePerDrone();
             // 仮想的にエージェントの生成位置を計算し、その配下に避難者グループを形成させる。
             foreach(var drone in base.Drones) {
+                int idx = base.Drones.IndexOf(drone);
                 var virtualDronePos = GetDronePosOnRandomNavMesh();
                 Vector3 spawnPos = virtualDronePos;
                 spawnPos.y = 1.5f; // 避難者の高さを設定
-                for (int i = 0; i < UnityEngine.Random.Range(EvacueeSpawnSizePerDroneMin, EvacueeSpawnSizePerDroneMax); i++) {
+                for (int i = 0; i < evacueeSizePerDrone[idx]; i++) {
                     var newEvacuee = Instantiate(Evacuee, spawnPos, Quaternion.identity, transform);
                     Evacuee evacueeIns = newEvacuee.GetComponent<Evacuee>();
                     var isCompleteWarp = evacueeIns.navMeshAgent.Warp(spawnPos);
@@ -83,9 +86,11 @@ public class PLATEAUEnvManager : EnvManager {
             }
         // エージェント有りモード
         } else {
+            var evacueeSizePerDrone = GetRandomEvacueeSizePerDrone();
             RegisterAgents(Tags.Agent);
             Drones = new List<GameObject>(GameObject.FindGameObjectsWithTag(Tags.Agent));
             foreach(var drone in Drones) {
+                int idx = Drones.IndexOf(drone);
                 // 赤円内のナビメッシュ上のランダムな位置にドローンを生成
                 drone.transform.position = GetDronePosOnRandomNavMesh();
                 NavController agentController = drone.GetComponent<NavController>();
@@ -94,7 +99,7 @@ public class PLATEAUEnvManager : EnvManager {
                 Vector3 spawnPos = drone.transform.position;
                 spawnPos.y = 1.5f; // 避難者の高さを設定
                 Vector3 CalibrationPos = new Vector3(spawnPos.x, spawnPos.y, spawnPos.z);
-                for (int i = 0; i < UnityEngine.Random.Range(EvacueeSpawnSizePerDroneMin, EvacueeSpawnSizePerDroneMax); i++) {
+                for (int i = 0; i < evacueeSizePerDrone[idx]; i++) {
                     var newEvacuee = Instantiate(Evacuee, spawnPos, Quaternion.identity, transform);
                     Evacuee evacueeIns = newEvacuee.GetComponent<Evacuee>();
                     var isCompleteWarp = evacueeIns.navMeshAgent.Warp(spawnPos);
@@ -195,5 +200,26 @@ public class PLATEAUEnvManager : EnvManager {
 
             prevPoint = newPoint; // 次の線を描画するために現在の点を更新
         }
+    }
+
+    private int[] GetRandomEvacueeSizePerDrone() {
+        // 合計数が設定値に一致するように、エージェント毎の避難者数をランダムに設定する
+        int[] evacueeSizePerDrone = new int[base.Drones.Count];
+        for(int i = 0; i < evacueeSizePerDrone.Length; i++) {
+            evacueeSizePerDrone[i] = UnityEngine.Random.Range(EvacueeSpawnSizePerDroneMin, EvacueeSpawnSizePerDroneMax);
+        }
+        // 合計値が設定値になるまで、ランダムに避難者数を調整する
+        while(evacueeSizePerDrone.Sum() != base.TotalEvacueeSize) {
+            int idx = UnityEngine.Random.Range(0, evacueeSizePerDrone.Length);
+            if(base.TotalEvacueeSize > evacueeSizePerDrone.Sum()) {
+                evacueeSizePerDrone[idx]++;
+            } else {
+                evacueeSizePerDrone[idx]--;
+            }
+        }
+        foreach(int size in evacueeSizePerDrone) {
+            Debug.Log("(確認)避難者数: " + size);
+        }
+        return evacueeSizePerDrone;
     }
 }

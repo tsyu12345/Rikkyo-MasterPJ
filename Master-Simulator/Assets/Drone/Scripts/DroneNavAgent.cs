@@ -58,7 +58,7 @@ public class DroneNavAgent : Agent {
 
         onAddEvacuee += () => {
             // AddReward(0.1f);
-            Debug.Log(LogPrefix + "Evacuee Added.");
+            //Debug.Log(LogPrefix + "Evacuee Added.");
         };
     }
 
@@ -110,6 +110,7 @@ public class DroneNavAgent : Agent {
         
         // #66 制限時間を観測情報に追加
         sensor.AddObservation(_env.LimitTimeSec);
+        sensor.AddObservation(_env.currentTimeSec);
 
         //他のドローンの位置を観測情報に追加
         List<GameObject> otherAgents = GetOtherAgents();
@@ -119,22 +120,26 @@ public class DroneNavAgent : Agent {
             var otherAgent = agent.GetComponent<DroneNavAgent>();
             sensor.AddObservation(otherAgent.currentGuidedEvacuees.Count);
             //sensor.AddObservation(otherAgent.FlyMode);
-            sensor.AddObservation(otherAgent.Target == null ? Vector3.zero : otherAgent.Target.transform.localPosition);
+            sensor.AddObservation(otherAgent.Target == null ? Vector3.zero : otherAgent.Target.transform.position);
         }
         
         //各避難タワーからの観測情報を追加
         //観測サイズを固定しないといけないので、最大数の避難タワーを観測情報に追加(残りは空：ZeroVector, -1)
+        var shelterCapacities = new List<float>();
+        var shelterDistances = new List<float>();
         foreach (var towerObj in _env.Towers) {
-            //sensor.AddObservation(tower.transform.localPosition);
+            sensor.AddObservation(towerObj.transform.position);
             var tower = towerObj.GetComponent<Tower>();
-            sensor.AddObservation(tower.currentCapacity);
-            // 各タワーまでの距離を入力として与える
-            sensor.AddObservation(Vector3.Distance(transform.position, towerObj.transform.position));
+            shelterCapacities.Add(tower.currentCapacity);
+            shelterDistances.Add(Vector3.Distance(transform.position, towerObj.transform.position));
         }
+        sensor.AddObservation(shelterCapacities);
+        sensor.AddObservation(shelterDistances);
 
     }
 
     public override void WriteDiscreteActionMask(IDiscreteActionMask actionMask) {
+        
         // #55 : 受け入れ不可能なタワーを選択した場合、行動マスクを設定し、エージェントが選択しないようにする
         foreach (var towerObj in _env.Towers) {
             Tower tower = towerObj.GetComponent<Tower>();
@@ -154,11 +159,27 @@ public class DroneNavAgent : Agent {
     /// <param name="actions"></param>
     public override void OnActionReceived(ActionBuffers actions) {
         var currentTargetIdx = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
-        var currentSpeed = ScaleAction(actions.ContinuousActions[(int)NavAgentCtrlIndex.Speed], 0, 3);
+        var currentSpeed = ScaleAction(actions.ContinuousActions[(int)NavAgentCtrlIndex.Speed], 1, 3);
 
         Target = _env.Towers[currentTargetIdx];
+
+        // #75 : 全ての避難者を誘導した場合、エピソードを終了する
+        if(currentGuidedEvacuees.Count == 0) {
+            Debug.Log(LogPrefix + "All Evacuees Guided. Episode End.");
+            _env.UnregisterAgent(this.gameObject);
+            gameObject.SetActive(false);
+            return;
+        }
+
         _controller.NavAgent.SetDestination(Target.transform.position);
         _controller.NavAgent.speed = currentSpeed;
+        // #73 : エージェントの行動集計処理
+        actionLogs.Add((
+            _env.currentTimeSec,
+            Target.name,
+            _controller.NavAgent.speed, 
+            currentGuidedEvacuees.Count
+        ));
         //_controller.FlyingCtrl(actions);
 
         // #55 : 受け入れ不可能なタワーを選択した場合、負の報酬を与えてエピソードを終了（エージェント無効化）する
@@ -170,20 +191,6 @@ public class DroneNavAgent : Agent {
             //gameObject.SetActive(false);
             RequestDecision();
         }
-        // #75 : 全ての避難者を誘導した場合、エピソードを終了する
-        if(currentGuidedEvacuees.Count == 0) {
-            Debug.Log(LogPrefix + "All Evacuees Guided. Episode End.");
-            _env.UnregisterAgent(this.gameObject);
-            gameObject.SetActive(false);
-        }
-
-        // #73 : エージェントの行動集計処理
-        actionLogs.Add((
-            _env.currentTimeSec,
-            Target.name,
-            _controller.NavAgent.speed, 
-            currentGuidedEvacuees.Count
-        ));
 
         
     }
@@ -226,17 +233,8 @@ public class DroneNavAgent : Agent {
         gameObject.SetActive(false);
     }
 
-    public void OnEndEpisodeHandler(float evacueeRate) {
-        if(guidedCount > 0) {
-            SetReward(guidedCount);
-            _env.AgentGuidedCount += guidedCount;
-        } else {
-            SetReward(-100f);
-        }
-        Reset();
-    }
 
-    private void Reset() {
+    public void Reset() {
         //とりあえず、0地点にリセット
         transform.localRotation = Quaternion.Euler(0, 0, 0);
         //transform.localPosition = StartPos;
@@ -255,9 +253,8 @@ public class DroneNavAgent : Agent {
 
 
     private List<GameObject> GetOtherAgents() {
-        GameObject[] drones = GameObject.FindGameObjectsWithTag(Tags.Agent);
         List<GameObject> otherAgents = new List<GameObject>();
-        foreach(GameObject drone in drones) {
+        foreach(GameObject drone in _env.Drones) {
             if(drone != this.gameObject) {
                 otherAgents.Add(drone);
             }

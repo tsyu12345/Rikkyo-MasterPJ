@@ -19,7 +19,7 @@ public class Evacuee : MonoBehaviour {
     public int Age; // 年齢
     public string Gender; // 性別
     public float Speed; //移動速度
-    public int SearchRadius; //探索範囲
+    public float SearchRadius = 100.0f; //探索範囲
     [Header("Evacuee Situations")]
     public bool isEvacuate = false;
     [Header("Evacuee Targets")]
@@ -68,6 +68,19 @@ public class Evacuee : MonoBehaviour {
             }
         } else {
             // TrackingDrone();
+            // 追従しているドローンとの距離が開け過ぎた場合、停止しエージェントに解除を通知
+            /*
+            if(navMeshAgent.remainingDistance > SearchRadius && isFollowingDrone) {
+                navMeshAgent.isStopped = true;
+                FollowTarget = null;
+                isFollowingDrone = false;
+                SendRemoveSignalForDrone(followedDrone);
+                followedDrone = null;
+            }
+            /*
+            if(!isFollowingDrone && FollowTarget == null) {
+                SearchDroneInRange();
+            }*/
         }
 
         
@@ -79,7 +92,7 @@ public class Evacuee : MonoBehaviour {
 
     void FixedUpdate() {
         if(FollowTarget != null) {
-            TargetDistance = Vector3.Distance(transform.localPosition, FollowTarget.transform.localPosition);
+            TargetDistance = Vector3.Distance(transform.position, FollowTarget.transform.position);
         }
         DrawPath();
     }
@@ -107,11 +120,15 @@ public class Evacuee : MonoBehaviour {
                 SendRemoveSignalForDrone(followedDrone);
             }
             gameObject.SetActive(false);
-        } else { //キャパシティがいっぱいの場合、次のタワーを探す
+        } else { //キャパシティがいっぱいの場合、次のタワー or ドローンを探す
             excludeTowers.Add(tower.uuid);
-            List<GameObject> towers = SearchTowers(excludeTowers);
-            if(towers.Count > 0) {
-                FollowTarget = towers[0]; //最短距離のタワーを目標に設定
+            if(ModelMode == EvacueeModelModes.Guided) {
+                TrackingDrone();
+            } else {
+                List<GameObject> towers = SearchTowers(excludeTowers);
+                if(towers.Count > 0) {
+                    FollowTarget = towers[0]; //最短距離のタワーを目標に設定
+                }
             }
         }
     }
@@ -121,6 +138,9 @@ public class Evacuee : MonoBehaviour {
     /// 目的地に向かって移動する
     /// </summary>
     private void Move() {
+        if(FollowTarget == null) {
+            return;
+        }
         Vector3 destination = new Vector3(FollowTarget.transform.localPosition.x, transform.localPosition.y, FollowTarget.transform.localPosition.z);
         navMeshAgent.SetDestination(destination);
     }

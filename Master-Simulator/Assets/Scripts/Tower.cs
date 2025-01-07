@@ -21,7 +21,7 @@ public class Tower : MonoBehaviour{
     public delegate void AcceptRejected(int NowAccCount) ; //収容定員が超過した時に発火する
     public AcceptRejected onRejected;
 
-    private MeshRenderer ExMark; //受け入れ不可を示すマーク
+    public MeshRenderer ExMark; //受け入れ不可を示すマーク
 
     private EnvManager _env;
 
@@ -34,6 +34,7 @@ public class Tower : MonoBehaviour{
         ExMark = transform.Find("ExMark").GetComponent<MeshRenderer>();
         ExMark.enabled = false;
         _env = GetComponentInParent<EnvManager>();
+        /* 環境管理クラスに移管
         _env.OnEpisodeInitialize += () => {
             ElapsedAccData.Clear();
         };
@@ -41,6 +42,7 @@ public class Tower : MonoBehaviour{
             NowAccCount = 0;
             ExMark.enabled = false;
         };
+        */
     }
 
     void Update() {
