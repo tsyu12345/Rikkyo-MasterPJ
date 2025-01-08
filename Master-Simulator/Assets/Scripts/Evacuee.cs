@@ -59,7 +59,6 @@ public class Evacuee : MonoBehaviour {
     void Update() {
         
         if(_env.SimulateMode == EnvManager.SimulateModeSetting.EvacueesOnly) {
-            SearchDroneInRange();
             if(!isFollowingDrone || FollowTarget == null) { //NOTE : #55 MTG 誘導モデルの場合、避難者は常にドローンを追尾する
                 List<GameObject> towers = SearchTowers(excludeTowers);
                 if(towers.Count > 0) {

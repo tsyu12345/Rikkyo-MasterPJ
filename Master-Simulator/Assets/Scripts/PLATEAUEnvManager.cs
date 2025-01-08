@@ -132,7 +132,9 @@ public class PLATEAUEnvManager : EnvManager {
                 eva.Speed = base.ConstantEvacueeSpeed;
             }
             // #75 : 初動時、エージェントから避難者の観測が行えていないため、ここで事前に割り当てる
-            eva.TrackingDrone();
+            if(base.SimulateMode == SimulateModeSetting.AgentsModel) {
+                eva.TrackingDrone();
+            }
         }
         Debug.Log("PLATEAU Environment Initialized");
     }
