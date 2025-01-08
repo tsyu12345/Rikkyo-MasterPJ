@@ -201,6 +201,12 @@ public class DroneNavAgent : Agent {
     /// </summary>
     /// <param name="actionsOut"></param>
     public override void Heuristic(in ActionBuffers actionsOut) {
+        // 移動速度は避難者グループの平均速度を設定
+        actionsOut.ContinuousActions.Array[0] = 1.5f;
+
+        // 目的地は最短距��の受け入れ可能な避��タワーを選択する
+        // ただし、現在のタワーが空の場合は、他のタワーを��先して選択する
+        // ただし、タワーが多い場合は、最も空きタワーを��先して選択する
         GameObject closestTower = GetClosestVaildShelter(transform.position);
         if(closestTower == null) {
             actionsOut.DiscreteActions.Array[0] = 0;
