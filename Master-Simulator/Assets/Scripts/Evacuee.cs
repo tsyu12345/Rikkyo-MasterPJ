@@ -54,35 +54,16 @@ public class Evacuee : MonoBehaviour {
         Field = transform.parent.gameObject;
         _env = Field.GetComponent<EnvManager>();
         excludeTowers = new List<string>();
+
+        if(_env.SimulateMode == EnvManager.SimulateModeSetting.EvacueesOnly) {
+            List<GameObject> towers = SearchTowers(excludeTowers);
+            if(towers.Count > 0) {
+                FollowTarget = towers[0]; //最短距離のタワーを目標に設定
+            }
+        }
     }
     
     void Update() {
-        
-        if(_env.SimulateMode == EnvManager.SimulateModeSetting.EvacueesOnly) {
-            SearchDroneInRange();
-            if(!isFollowingDrone || FollowTarget == null) { //NOTE : #55 MTG 誘導モデルの場合、避難者は常にドローンを追尾する
-                List<GameObject> towers = SearchTowers(excludeTowers);
-                if(towers.Count > 0) {
-                    FollowTarget = towers[0]; //最短距離のタワーを目標に設定
-                }
-            }
-        } else {
-            // TrackingDrone();
-            // 追従しているドローンとの距離が開け過ぎた場合、停止しエージェントに解除を通知
-            /*
-            if(navMeshAgent.remainingDistance > SearchRadius && isFollowingDrone) {
-                navMeshAgent.isStopped = true;
-                FollowTarget = null;
-                isFollowingDrone = false;
-                SendRemoveSignalForDrone(followedDrone);
-                followedDrone = null;
-            }
-            /*
-            if(!isFollowingDrone && FollowTarget == null) {
-                SearchDroneInRange();
-            }*/
-        }
-
         
         Move();
         
@@ -91,10 +72,12 @@ public class Evacuee : MonoBehaviour {
     }
 
     void FixedUpdate() {
+        /*
         if(FollowTarget != null) {
             TargetDistance = Vector3.Distance(transform.position, FollowTarget.transform.position);
         }
         DrawPath();
+        */
     }
 
     void OnTriggerEnter(Collider other) {
@@ -121,10 +104,10 @@ public class Evacuee : MonoBehaviour {
             }
             gameObject.SetActive(false);
         } else { //キャパシティがいっぱいの場合、次のタワー or ドローンを探す
-            excludeTowers.Add(tower.uuid);
-            if(ModelMode == EvacueeModelModes.Guided) {
+            if(_env.SimulateMode == EnvManager.SimulateModeSetting.AgentsModel) {
                 TrackingDrone();
-            } else {
+            } else if(_env.SimulateMode == EnvManager.SimulateModeSetting.EvacueesOnly) {
+                excludeTowers.Add(tower.uuid);
                 List<GameObject> towers = SearchTowers(excludeTowers);
                 if(towers.Count > 0) {
                     FollowTarget = towers[0]; //最短距離のタワーを目標に設定
