@@ -49,6 +49,10 @@ public class Evacuee : MonoBehaviour {
         lineRenderer.endWidth = 0.1f;
         lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
         lineRenderer.positionCount = 0;
+        // タイミングによりnullになる場合があるため、ここで初期化
+        Field = transform.parent.gameObject;
+        _env = Field.GetComponent<EnvManager>();
+        excludeTowers = new List<string>();
 
         //transform.position = new Vector3(transform.position.x, 1.5f, transform.position.z);
     }
@@ -69,7 +73,7 @@ public class Evacuee : MonoBehaviour {
     
     void Update() {
         
-        if(_env.SimulateMode == EnvManager.SimulateModeSetting.SearchAgentModel) {
+        if(_env.SimulateMode == EnvManager.SimulateModeSetting.SearchAgentModel && !isFollowingDrone && FollowTarget == null) {
             DetectDroneInView();
         }
 

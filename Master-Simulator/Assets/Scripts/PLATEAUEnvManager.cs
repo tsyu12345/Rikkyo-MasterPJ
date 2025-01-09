@@ -95,6 +95,7 @@ public class PLATEAUEnvManager : EnvManager {
                 drone.transform.position = GetDronePosOnRandomNavMesh();
                 NavController agentController = drone.GetComponent<NavController>();
                 agentController.NavAgent.radius = 1.0f;
+                agentController.NavAgent.Warp(GetDronePosOnRandomNavMesh());
                 if(base.SimulateMode == SimulateModeSetting.AgentsModel) {
                     // このドローンの直下のナビメッシュ上に避難者を生成する
                     Vector3 spawnPos = drone.transform.position;
@@ -121,13 +122,13 @@ public class PLATEAUEnvManager : EnvManager {
                     // NOTE: #60-何故か生成後にエージェントの位置が避難者のところにいないことがあるので、ここで補正する。
                     // スポーンした避難者の位置にドローンを移動させる
                     agentController.NavAgent.Warp(CalibrationPos);
-                } else if(base.SimulateMode == SimulateModeSetting.SearchAgentModel) {
-                    for(int i = 0; i < base.TotalEvacueeSize; i++) {
-                        // 赤円内のナビメッシュ上のランダムな位置に避難者を生成
-                        SpawnEvacueeOnNavMesh();
-                    }
                 }
-                
+            }
+            if(base.SimulateMode == SimulateModeSetting.SearchAgentModel) {
+                for(int i = 0; i < base.TotalEvacueeSize; i++) {
+                    // 赤円内のナビメッシュ上のランダムな位置に避難者を生成
+                    SpawnEvacueeOnNavMesh();
+                }
             }
         }
 
@@ -179,6 +180,7 @@ public class PLATEAUEnvManager : EnvManager {
     private Vector3 GetDronePosOnRandomNavMesh() {
         var spawnPos = GetRandomPositionOnNavMesh();
         spawnPos.y = transform.position.y;
+        Debug.Log("Drone Spawn Position: " + spawnPos);
         return spawnPos;
     }
 

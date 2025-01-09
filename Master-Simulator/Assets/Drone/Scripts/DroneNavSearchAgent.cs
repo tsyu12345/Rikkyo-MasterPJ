@@ -134,8 +134,8 @@ public class DroneNavSearchAgent : Agent {
         var currentTargetIdx = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
         var currentSpeed = ScaleAction(actions.ContinuousActions[(int)NavAgentCtrlIndex.Speed], 1, 3);
         */
-        var movementX = ScaleAction(actions.ContinuousActions[0], -5, 5);
-        var movementZ = ScaleAction(actions.ContinuousActions[1], -5, 5);
+        var movementX = ScaleAction(actions.ContinuousActions[0], -10, 10);
+        var movementZ = ScaleAction(actions.ContinuousActions[1], -10, 10);
         var speed = ScaleAction(actions.ContinuousActions[2], 1, 3);
 
         Vector3 offset = new Vector3(movementX, transform.position.y, movementZ);

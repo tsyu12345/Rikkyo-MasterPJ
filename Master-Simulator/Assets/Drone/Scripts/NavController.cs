@@ -76,7 +76,7 @@ public class NavController : DroneController {
 
     public void MoveAgent(Vector3 offset, float speed) {
         NavAgent.speed = speed;
-        NavAgent.Move(offset * speed * Time.deltaTime);
+        NavAgent.Move(offset);
     }
 
     /// <summary>

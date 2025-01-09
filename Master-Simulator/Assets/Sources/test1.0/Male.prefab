@@ -1161,8 +1161,8 @@ MonoBehaviour:
   TargetDistance: 0
   IsPathFind: 0
   navMeshAgent: {fileID: 0}
-  viewRadius: 50
-  viewAngle: 35
+  viewRadius: 60
+  viewAngle: 360
   detectionLayer:
     serializedVersion: 2
     m_Bits: 1
