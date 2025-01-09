@@ -18,7 +18,8 @@ using UnityEngine.SceneManagement;
 public abstract class EnvManager : MonoBehaviour {
     public enum SimulateModeSetting {
         EvacueesOnly,
-        AgentsModel
+        AgentsModel,
+        SearchAgentModel
     }
     public enum EvacueeSpawnModeSetting {
         SingleRandom,
@@ -74,7 +75,7 @@ public abstract class EnvManager : MonoBehaviour {
     public float EvacuationRate = 0.0f;
 
     [Header("GameObjects")]
-    public GameObject Evacuee;
+    public GameObject EvacueePrefab;
 
     [Header("Objects")]
     public List<GameObject> Drones;
@@ -140,7 +141,7 @@ public abstract class EnvManager : MonoBehaviour {
         var type = SimulateMode == SimulateModeSetting.EvacueesOnly ? "EvacueesOnly" : "AgentsModel";
         var fileName = $"{SceneManager.GetActiveScene().name}_{type}_EpisodeSummary.csv";
         var path = Path.Combine(dataSavePath, fileName);
-        var header = new string[] {"Limit Time", "End Time Sec","Total Evacuee Count", "Drone Count", "Final Evacuate Rate"};
+        var header = new string[] {"Limit Time", "End Time Sec","Total EvacueePrefab; Count", "Drone Count", "Final Evacuate Rate"};
         DataSaver.SaveData2CSV(path, header, episodeDatas, (data) => {
             return new string[] {data.limitSec.ToString(), data.endSec.ToString(), data.totalEvacueeCount.ToString(), data.dronesCount.ToString(), data.finalEvacuateRate.ToString()};
         });

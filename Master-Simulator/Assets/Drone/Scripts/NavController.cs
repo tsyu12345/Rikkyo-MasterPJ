@@ -74,6 +74,11 @@ public class NavController : DroneController {
         */
     }
 
+    public void MoveAgent(Vector3 offset, float speed) {
+        NavAgent.speed = speed;
+        NavAgent.Move(offset * speed * Time.deltaTime);
+    }
+
     /// <summary>
     /// 探索行動における飛行制御関数
     /// TODO: Nav用DroneControllerクラスができたらそっちに移管する

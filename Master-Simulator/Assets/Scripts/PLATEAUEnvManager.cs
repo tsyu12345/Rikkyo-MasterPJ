@@ -66,7 +66,7 @@ public class PLATEAUEnvManager : EnvManager {
                 Vector3 spawnPos = virtualDronePos;
                 spawnPos.y = 1.5f; // 避難者の高さを設定
                 for (int i = 0; i < evacueeSizePerDrone[idx]; i++) {
-                    var newEvacuee = Instantiate(Evacuee, spawnPos, Quaternion.identity, transform);
+                    var newEvacuee = Instantiate(EvacueePrefab, spawnPos, Quaternion.identity, transform);
                     Evacuee evacueeIns = newEvacuee.GetComponent<Evacuee>();
                     var isCompleteWarp = evacueeIns.navMeshAgent.Warp(spawnPos);
                     if (!isCompleteWarp) {
@@ -95,31 +95,39 @@ public class PLATEAUEnvManager : EnvManager {
                 drone.transform.position = GetDronePosOnRandomNavMesh();
                 NavController agentController = drone.GetComponent<NavController>();
                 agentController.NavAgent.radius = 1.0f;
-                // このドローンの直下のナビメッシュ上に避難者を生成する
-                Vector3 spawnPos = drone.transform.position;
-                spawnPos.y = 1.5f; // 避難者の高さを設定
-                Vector3 CalibrationPos = new Vector3(spawnPos.x, spawnPos.y, spawnPos.z);
-                for (int i = 0; i < evacueeSizePerDrone[idx]; i++) {
-                    var newEvacuee = Instantiate(Evacuee, spawnPos, Quaternion.identity, transform);
-                    Evacuee evacueeIns = newEvacuee.GetComponent<Evacuee>();
-                    var isCompleteWarp = evacueeIns.navMeshAgent.Warp(spawnPos);
-                    if (!isCompleteWarp) {
-                        Debug.LogError("Failed to warp evacuee to drone position");
-                        // Sampleを使って再度位置を取得
-                        if (NavMesh.SamplePosition(spawnPos, out NavMeshHit hit, 1.0f, NavMesh.AllAreas)) {
-                            newEvacuee.transform.position = hit.position;
-                        } else {
-                            Debug.LogError("避難者がNavMesh上に生成できませんでした。位置を確認してください。");
+                if(base.SimulateMode == SimulateModeSetting.AgentsModel) {
+                    // このドローンの直下のナビメッシュ上に避難者を生成する
+                    Vector3 spawnPos = drone.transform.position;
+                    spawnPos.y = 1.5f; // 避難者の高さを設定
+                    Vector3 CalibrationPos = new Vector3(spawnPos.x, spawnPos.y, spawnPos.z);
+                    for (int i = 0; i < evacueeSizePerDrone[idx]; i++) {
+                        var newEvacuee = Instantiate(EvacueePrefab, spawnPos, Quaternion.identity, transform);
+                        Evacuee evacueeIns = newEvacuee.GetComponent<Evacuee>();
+                        var isCompleteWarp = evacueeIns.navMeshAgent.Warp(spawnPos);
+                        if (!isCompleteWarp) {
+                            Debug.LogError("Failed to warp evacuee to drone position");
+                            // Sampleを使って再度位置を取得
+                            if (NavMesh.SamplePosition(spawnPos, out NavMeshHit hit, 1.0f, NavMesh.AllAreas)) {
+                                newEvacuee.transform.position = hit.position;
+                            } else {
+                                Debug.LogError("避難者がNavMesh上に生成できませんでした。位置を確認してください。");
+                            }
                         }
+                        Evacuees.Add(newEvacuee);
+                        newEvacuee.tag = Tags.Evacuee;
+                        CalibrationPos = newEvacuee.transform.position;
                     }
-                    Evacuees.Add(newEvacuee);
-                    newEvacuee.tag = Tags.Evacuee;
-                    CalibrationPos = newEvacuee.transform.position;
+                    drone.SetActive(true);
+                    // NOTE: #60-何故か生成後にエージェントの位置が避難者のところにいないことがあるので、ここで補正する。
+                    // スポーンした避難者の位置にドローンを移動させる
+                    agentController.NavAgent.Warp(CalibrationPos);
+                } else if(base.SimulateMode == SimulateModeSetting.SearchAgentModel) {
+                    for(int i = 0; i < base.TotalEvacueeSize; i++) {
+                        // 赤円内のナビメッシュ上のランダムな位置に避難者を生成
+                        SpawnEvacueeOnNavMesh();
+                    }
                 }
-                drone.SetActive(true);
-                // NOTE: #60-何故か生成後にエージェントの位置が避難者のところにいないことがあるので、ここで補正する。
-                // スポーンした避難者の位置にドローンを移動させる
-                agentController.NavAgent.Warp(CalibrationPos);
+                
             }
         }
 
@@ -158,10 +166,14 @@ public class PLATEAUEnvManager : EnvManager {
     private void SpawnEvacueeOnNavMesh() {
         var spawnPos = GetRandomPositionOnNavMesh();
         spawnPos.y = transform.position.y;
-        var newEvacuee = Instantiate(Evacuee, spawnPos, Quaternion.identity);
+        var newEvacuee = Instantiate(EvacueePrefab, spawnPos, Quaternion.identity);
         Evacuees.Add(newEvacuee);
         newEvacuee.transform.parent = transform;
         newEvacuee.tag = Tags.Evacuee;
+        var eva = newEvacuee.GetComponent<Evacuee>();
+        if(base.SimulateMode == SimulateModeSetting.SearchAgentModel) {
+            eva.ModelMode = Evacuee.EvacueeModelModes.Search;
+        }
     }
 
     private Vector3 GetDronePosOnRandomNavMesh() {

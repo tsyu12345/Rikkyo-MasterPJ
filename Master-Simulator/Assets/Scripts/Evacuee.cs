@@ -10,8 +10,8 @@ using Constants;
 /// </summary>
 public class Evacuee : MonoBehaviour {
     public enum EvacueeModelModes {
-        Guided,
-        Search
+        Guided, // 誘導タスク
+        Search // 探索タスク
     }
     public EvacueeModelModes ModelMode = EvacueeModelModes.Guided;
     public GameObject Field;
@@ -34,8 +34,12 @@ public class Evacuee : MonoBehaviour {
     private EnvManager _env;
     private string LogPrefix = "Evacuee: ";
     public NavMeshAgent navMeshAgent = null;
+    [Header("探索タスクにおける視界設定")]
+    public float viewRadius = 10f; // 視界の半径
+    public float viewAngle = 60f; // 視界の角度（度単位）
+    public LayerMask detectionLayer; // 検出対象のレイヤーマスク    private LineRenderer lineRenderer;
     private LineRenderer lineRenderer;
-    
+
 
     void Awake() {
         navMeshAgent = GetComponent<NavMeshAgent>();
@@ -65,6 +69,10 @@ public class Evacuee : MonoBehaviour {
     
     void Update() {
         
+        if(_env.SimulateMode == EnvManager.SimulateModeSetting.SearchAgentModel) {
+            DetectDroneInView();
+        }
+
         Move();
         
         IsPathFind = navMeshAgent.pathPending ? false : true;
@@ -78,6 +86,20 @@ public class Evacuee : MonoBehaviour {
         }
         DrawPath();
         */
+    }
+
+    // 視界範囲をGizmosで視覚化（エディタ用）
+    void OnDrawGizmosSelected() {
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(transform.position, viewRadius);
+
+        // 視界角度を描画
+        Vector3 forward = transform.forward;
+        Quaternion leftRayRotation = Quaternion.Euler(0, -viewAngle / 2, 0);
+        Quaternion rightRayRotation = Quaternion.Euler(0, viewAngle / 2, 0);
+        Gizmos.color = Color.blue;
+        Gizmos.DrawRay(transform.position, leftRayRotation * forward * viewRadius);
+        Gizmos.DrawRay(transform.position, rightRayRotation * forward * viewRadius);
     }
 
     void OnTriggerEnter(Collider other) {
@@ -226,5 +248,29 @@ public class Evacuee : MonoBehaviour {
 
     private void HidePath() {
         lineRenderer.positionCount = 0;
+    }
+
+    void DetectDroneInView() {
+        // 視界内に入ったオブジェクトを取得
+        Collider[] hitColliders = Physics.OverlapSphere(transform.position, viewRadius, detectionLayer);
+
+        foreach (var hitCollider in hitColliders) {
+            // 特定のタグを持つオブジェクトだけを処理
+            if (hitCollider.CompareTag(Tags.Agent)) {
+                Vector3 directionToTarget = (hitCollider.transform.position - transform.position).normalized;
+                float angleBetween = Vector3.Angle(transform.forward, directionToTarget);
+
+                // 視野角内にある場合のみ処理
+                if (angleBetween < viewAngle / 2f) {
+                    // Raycastで遮蔽物がないか確認（オプション）
+                    if (!Physics.Linecast(transform.position, hitCollider.transform.position, ~detectionLayer)) {
+                        Debug.Log("視界内にタグ " + Tags.Agent + " のオブジェクトを検出: " + hitCollider.gameObject.name);
+                        // ターゲットに設定
+                        isFollowingDrone = true;
+                        FollowTarget = hitCollider.gameObject;
+                    }
+                }
+            }
+        }
     }
 }
