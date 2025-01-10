@@ -99,7 +99,9 @@ public class Evacuee : MonoBehaviour {
                 //誘導されていたドローンエージェントのカウントを更新
                 var agent = followedDrone.GetComponent<DroneNavAgent>();
                 agent.guidedCount += 1;
-                agent.AddReward(1.0f);
+                // agent.AddReward(1.0f);
+                // 人数差による報酬の差分を抑える為誘導人数との割合を報酬とする（最大1.0）
+                agent.AddReward(1.0f / agent.InitialEvacueeCount);
                 SendRemoveSignalForDrone(followedDrone);
             }
             gameObject.SetActive(false);

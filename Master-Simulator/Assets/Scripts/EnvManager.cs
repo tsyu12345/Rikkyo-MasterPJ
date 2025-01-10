@@ -127,6 +127,7 @@ public abstract class EnvManager : MonoBehaviour {
         
         Util = GetComponent<Utils>();
         Init();
+        RegisterAgents(Tags.Agent);
         SetEpisodeEndHandlers();
     }
 
@@ -249,18 +250,20 @@ public abstract class EnvManager : MonoBehaviour {
             Agents.SetGroupReward(EvacuationRate);
             // かかった時間が短いほど報酬を与える
             Agents.AddGroupReward(1 - (float)endTimeSec / LimitTimeSec);
-            // エージェントのエピソード終了処理を発行
-            foreach(GameObject drone in Drones) {
-                var agent = drone.GetComponent<DroneNavAgent>();
-                agent.Reset();
-            }
+        
             //AddGroupReward();
             if(isEvacueeAll) {
                 Agents.GroupEpisodeInterrupted();
             } else {
                 Agents.EndGroupEpisode();
             }
+            // エージェントのエピソード終了処理を発行
+            foreach(GameObject drone in Drones) {
+                var agent = drone.GetComponent<DroneNavAgent>();
+                agent.Reset();
+            }
         }
+        
         currentEpisodeCount++;
         evacueeRateDatas.Clear();
         Init();

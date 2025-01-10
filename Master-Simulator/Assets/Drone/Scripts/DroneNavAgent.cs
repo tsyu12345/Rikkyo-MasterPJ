@@ -18,6 +18,7 @@ public class DroneNavAgent : Agent {
     public int guidedCount = 0;
     public GameObject Target;
     public int FlyMode = 0;
+    public int InitialEvacueeCount = 0;
 
     [Header("UI Elements")]
     private TextMeshPro currentGuidingCount;
@@ -44,8 +45,8 @@ public class DroneNavAgent : Agent {
         }
 
         _controller.RegisterTeam(gameObject.tag);
-        _controller.onCrash += OnCrash;
-        _controller.onEmptyBattery += OnBatteryEmpty;
+        //_controller.onCrash += OnCrash;
+        //_controller.onEmptyBattery += OnBatteryEmpty;
         //_env.OnEndEpisode += OnEndEpisodeHandler;
 
         currentGuidingCount = transform.Find("GuidingCounter").GetComponent<TextMeshPro>();
@@ -53,6 +54,7 @@ public class DroneNavAgent : Agent {
 
         _env.OnEpisodeInitialize += () => {
             _controller.Targets = _env.Towers;
+            InitialEvacueeCount = currentGuidedEvacuees.Count;
             RequestDecision();
         };
 
@@ -93,8 +95,7 @@ public class DroneNavAgent : Agent {
         //自身の位置・速度を観測情報に追加
         sensor.AddObservation(transform.position);
         sensor.AddObservation(_controller.NavAgent.speed);
-        //sensor.AddObservation(FlyMode);
-        sensor.AddObservation(Target == null ? Vector3.zero : Target.transform.position);
+        
         //現在誘導している避難者の数, 移動速度平均を観測情報に追加
         sensor.AddObservation(currentGuidedEvacuees.Count); //FIXME : 初回の環境観測が正常に行えていない
         float sumSpeed = 0.0f;
@@ -161,12 +162,13 @@ public class DroneNavAgent : Agent {
         var currentTargetIdx = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
         var currentSpeed = ScaleAction(actions.ContinuousActions[(int)NavAgentCtrlIndex.Speed], 1, 3);
 
+
         Target = _env.Towers[currentTargetIdx];
 
         // #75 : 全ての避難者を誘導した場合、エピソードを終了する
         if(currentGuidedEvacuees.Count == 0) {
             Debug.Log(LogPrefix + "All Evacuees Guided. Episode End.");
-            _env.UnregisterAgent(this.gameObject);
+            // _env.UnregisterAgent(this.gameObject);
             gameObject.SetActive(false);
             return;
         }
@@ -251,7 +253,7 @@ public class DroneNavAgent : Agent {
         _controller.Rbody.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         _controller.batteryLevel = 100;
         currentGuidedEvacuees.Clear();
-        currentGuidedEvacuees = new List<GameObject>();
+        InitialEvacueeCount = 0;
         actionLogs.Clear();
         guidedCount = 0;
         this.gameObject.SetActive(true);
