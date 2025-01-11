@@ -19,6 +19,10 @@ public class NavController : DroneController {
     public float PatrolRadius = 20f;
     public bool PathFound = false;
     private LineRenderer lineRenderer;
+
+    void Awake() {
+        NavAgent = GetComponent<NavMeshAgent>();
+    }
     void Start() {
 
         base.Start();
@@ -72,6 +76,11 @@ public class NavController : DroneController {
 
         }
         */
+    }
+
+    public void MoveAgent(Vector3 destination, float speed) {
+        NavAgent.speed = speed;
+        NavAgent.SetDestination(destination);
     }
 
     /// <summary>

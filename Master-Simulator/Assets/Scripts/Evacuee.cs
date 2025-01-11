@@ -9,9 +9,10 @@ using Constants;
 /// 避難者に関するスクリプト
 /// </summary>
 public class Evacuee : MonoBehaviour {
+
     public enum EvacueeModelModes {
-        Guided,
-        Search
+        Guided, // 誘導タスク
+        Search // 探索タスク
     }
     public EvacueeModelModes ModelMode = EvacueeModelModes.Guided;
     public GameObject Field;
@@ -27,15 +28,19 @@ public class Evacuee : MonoBehaviour {
     public GameObject FollowTarget;
     public float TargetDistance;
     public bool IsPathFind = false;
-
+    
     private GameObject followedDrone = null;
     private List<string> excludeTowers;
 
     private EnvManager _env;
     private string LogPrefix = "Evacuee: ";
     public NavMeshAgent navMeshAgent = null;
+    [Header("探索タスクにおける視界設定")]
+    public float viewRadius = 10f; // 視界の半径
+    public float viewAngle = 60f; // 視界の角度（度単位）
+    public LayerMask detectionLayer; // 検出対象のレイヤーマスク    private LineRenderer lineRenderer;
     private LineRenderer lineRenderer;
-    
+
 
     void Awake() {
         navMeshAgent = GetComponent<NavMeshAgent>();
@@ -45,7 +50,12 @@ public class Evacuee : MonoBehaviour {
         lineRenderer.endWidth = 0.1f;
         lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
         lineRenderer.positionCount = 0;
-
+        // タイミングによりnullになる場合があるため、ここで初期化
+        if(transform.parent != null) {
+            Field = transform.parent.gameObject;
+            _env = Field.GetComponent<EnvManager>();
+            excludeTowers = new List<string>();
+        }
         //transform.position = new Vector3(transform.position.x, 1.5f, transform.position.z);
     }
 
@@ -65,6 +75,10 @@ public class Evacuee : MonoBehaviour {
     
     void Update() {
         
+        if(_env.SimulateMode == EnvManager.SimulateModeSetting.SearchAgentModel && !isFollowingDrone && FollowTarget == null) {
+            DetectDroneInView();
+        }
+
         Move();
         
         IsPathFind = navMeshAgent.pathPending ? false : true;
@@ -78,6 +92,20 @@ public class Evacuee : MonoBehaviour {
         }
         DrawPath();
         */
+    }
+
+    // 視界範囲をGizmosで視覚化（エディタ用）
+    void OnDrawGizmosSelected() {
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(transform.position, viewRadius);
+
+        // 視界角度を描画
+        Vector3 forward = transform.forward;
+        Quaternion leftRayRotation = Quaternion.Euler(0, -viewAngle / 2, 0);
+        Quaternion rightRayRotation = Quaternion.Euler(0, viewAngle / 2, 0);
+        Gizmos.color = Color.blue;
+        Gizmos.DrawRay(transform.position, leftRayRotation * forward * viewRadius);
+        Gizmos.DrawRay(transform.position, rightRayRotation * forward * viewRadius);
     }
 
     void OnTriggerEnter(Collider other) {
@@ -140,7 +168,7 @@ public class Evacuee : MonoBehaviour {
                 // 直前の追跡ドローンを更新
                 followedDrone = hitCollider.gameObject;
                 HidePath();
-                SendAddSignalForDrone(followedDrone);
+                SendAddSignalForDrone<DroneNavAgent>(followedDrone);
                 return;
             }
         }
@@ -170,7 +198,7 @@ public class Evacuee : MonoBehaviour {
         // 直前の追跡ドローンを更新
         followedDrone = sortedAgents[0];
         HidePath();
-        SendAddSignalForDrone(followedDrone);
+        SendAddSignalForDrone<DroneNavAgent>(followedDrone);
     }
     
     /// <summary>
@@ -193,14 +221,16 @@ public class Evacuee : MonoBehaviour {
         return sortedTowers;
     }
 
-    private void SendAddSignalForDrone(GameObject drone) {
-        DroneNavAgent agent = drone.GetComponent<DroneNavAgent>();
+
+    private void SendAddSignalForDrone<T>(GameObject drone) where T : IDroneAgent {
+        T agent = drone.GetComponent<T>();
+
         // 既に誘導中の場合は無視(リストに含まれている場合は無視)
-        if(agent.currentGuidedEvacuees.Contains(gameObject)) {
+        if (agent.currentGuidedEvacuees.Contains(gameObject)) {
             return;
         }
         agent.currentGuidedEvacuees.Add(gameObject);
-        agent.onAddEvacuee?.Invoke();
+        agent.onAddEvacuee();
     }
 
     private void SendRemoveSignalForDrone(GameObject drone) {
@@ -226,5 +256,35 @@ public class Evacuee : MonoBehaviour {
 
     private void HidePath() {
         lineRenderer.positionCount = 0;
+    }
+
+
+    /// <summary>
+    /// ドローンが視界内にいるかどうかを判定
+    /// NavMesh.Raycast()を使用して、視界内にドローンがいるかどうかを判定 
+    /// </summary>
+    private void DetectDroneInView() {
+        Collider[] hitColliders = Physics.OverlapSphere(transform.position, viewRadius, detectionLayer);
+        foreach (var hitCollider in hitColliders) {
+            if (hitCollider.CompareTag(Tags.Agent)) {
+                Vector3 direction = (hitCollider.transform.position - transform.position).normalized;
+                float angle = Vector3.Angle(transform.forward, direction);
+                if (angle < viewAngle / 2) {
+                    NavMeshHit hit;
+                    if (NavMesh.Raycast(transform.position, hitCollider.transform.position, out hit, NavMesh.AllAreas)) {
+                        isFollowingDrone = true;
+                        FollowTarget = hitCollider.gameObject;
+                        if(followedDrone != null) { //前に追跡していたドローンがいた場合、リストから削除
+                            SendRemoveSignalForDrone(followedDrone);
+                        }
+                        // 直前の追跡ドローンを更新
+                        followedDrone = hitCollider.gameObject;
+                        HidePath();
+                        SendAddSignalForDrone<DroneNavSearchAgent>(followedDrone);
+                        return;
+                    }
+                }
+            }
+        }
     }
 }

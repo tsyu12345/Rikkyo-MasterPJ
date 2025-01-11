@@ -58,7 +58,7 @@ public class Tower : MonoBehaviour{
     }
 
     void OnTriggerEnter(Collider other) {
-        if (other.CompareTag(Tags.Evacuee)) {
+        if (other.CompareTag(Tags.Evacuee) && !(_env.SimulateMode == EnvManager.SimulateModeSetting.SearchAgentModel)) {
             Evacuee evacuee = other.GetComponent<Evacuee>();
             evacuee.Evacuation(this.gameObject);
         }

@@ -74,7 +74,7 @@ public class FieldEnvManager : EnvManager {
         int countEvacuees = UnityEngine.Random.Range(MinEvacueeCount, MaxEvacueeCount);
         foreach(var spawnObj in EvacueesSpawnAreas) {
             for(int i = 0; i < countEvacuees; i++) {
-            SpawnObject(Evacuee, spawnObj, (evacueeObj)=> {
+            SpawnObject(EvacueePrefab, spawnObj, (evacueeObj)=> {
                 evacueeObj.tag = Tags.Evacuee;
                 Evacuees.Add(evacueeObj);
             });
