@@ -87,6 +87,8 @@ public class PLATEAUEnvManager : EnvManager {
         // エージェント有りモード
         } else {
             var evacueeSizePerDrone = GetRandomEvacueeSizePerDrone();
+            RegisterAgents(Tags.Agent);
+            Drones = new List<GameObject>(GameObject.FindGameObjectsWithTag(Tags.Agent));
             foreach(var drone in Drones) {
                 int idx = Drones.IndexOf(drone);
                 // 赤円内のナビメッシュ上のランダムな位置にドローンを生成
@@ -140,6 +142,13 @@ public class PLATEAUEnvManager : EnvManager {
 
     private void DestroyEnv() {
         RemoveObjectAll(Tags.Evacuee);
+        
+        foreach(var drone in Drones) {
+            if(base.SimulateMode == SimulateModeSetting.AgentsModel) {
+                UnregisterAgent(drone);
+            }
+        }
+
         Evacuees.Clear();
         currentTimeSec = 0;
         AgentGuidedCount = 0;

@@ -168,7 +168,7 @@ public class DroneNavAgent : Agent {
         // #75 : 全ての避難者を誘導した場合、エピソードを終了する
         if(currentGuidedEvacuees.Count == 0) {
             Debug.Log(LogPrefix + "All Evacuees Guided. Episode End.");
-            // _env.UnregisterAgent(this.gameObject);
+            _env.UnregisterAgent(this.gameObject);
             gameObject.SetActive(false);
             return;
         }
