@@ -10,3 +10,9 @@ public class Types : MonoBehaviour {
         public string content;
     }
 }
+
+public interface IDroneAgent {
+    List<GameObject> currentGuidedEvacuees { get; set; }
+    int guidedCount { get; set; }
+    void onAddEvacuee();
+}

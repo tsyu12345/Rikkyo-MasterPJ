@@ -10,12 +10,12 @@ using UnityEngine.AI;
 using UtilityFuncs;
 using Constants;
 
-public class DroneNavSearchAgent : Agent {
+public class DroneNavSearchAgent : Agent, IDroneAgent {
     
     [Header("Agent Parameters")]
     public float patrolRadius = 10f;
-    public List<GameObject> currentGuidedEvacuees = new List<GameObject>();
-    public int guidedCount = 0;
+    public List<GameObject> currentGuidedEvacuees { get; set; } = new List<GameObject>();
+    public int guidedCount { get; set; } = 0;
 
     [Header("UI Elements")]
     private TextMeshPro currentGuidingCount;
@@ -29,6 +29,9 @@ public class DroneNavSearchAgent : Agent {
 
     public delegate void OnAddEvacuee();
     public OnAddEvacuee onAddEvacuee;
+    void IDroneAgent.onAddEvacuee() {
+        onAddEvacuee?.Invoke();
+    }
 
     void Start() {
         _controller = GetComponent<NavController>();
@@ -42,8 +45,10 @@ public class DroneNavSearchAgent : Agent {
         }
 
         _controller.RegisterTeam(gameObject.tag);
+        /*
         _controller.onCrash += OnCrash;
         _controller.onEmptyBattery += OnBatteryEmpty;
+        */
         //_env.OnEndEpisode += OnEndEpisodeHandler;
         /*
         currentGuidingCount = transform.Find("GuidingCounter").GetComponent<TextMeshPro>();
@@ -55,8 +60,8 @@ public class DroneNavSearchAgent : Agent {
         };
 
         onAddEvacuee += () => {
-            AddReward(1f);
-            //Debug.Log(LogPrefix + "Evacuee Added.");
+            AddReward(1.0f/_env.Evacuees.Count);
+            _env.Agents.AddGroupReward(1.0f/_env.Evacuees.Count);
         };
     }
 
@@ -116,8 +121,8 @@ public class DroneNavSearchAgent : Agent {
         foreach(GameObject agent in otherAgents) {
             sensor.AddObservation(agent.transform.position);
             // 他のドローンの選択している目的地と飛行モードを観測情報に追加
-            var otherAgent = agent.GetComponent<DroneNavAgent>();
-            //sensor.AddObservation(otherAgent.currentGuidedEvacuees.Count);
+            var otherAgent = agent.GetComponent<DroneNavSearchAgent>();
+            sensor.AddObservation(otherAgent.currentGuidedEvacuees.Count);
         }
 
     }
@@ -134,31 +139,48 @@ public class DroneNavSearchAgent : Agent {
         var currentTargetIdx = actions.DiscreteActions[(int)NavAgentCtrlIndex.Destination];
         var currentSpeed = ScaleAction(actions.ContinuousActions[(int)NavAgentCtrlIndex.Speed], 1, 3);
         */
-        var movementX = ScaleAction(actions.ContinuousActions[0], -10, 10);
-        var movementZ = ScaleAction(actions.ContinuousActions[1], -10, 10);
-        var speed = ScaleAction(actions.ContinuousActions[2], 1, 3);
+        var movementX = ScaleAction(actions.ContinuousActions[0], -50, 50);
+        var movementZ = ScaleAction(actions.ContinuousActions[1], -50, 50);
+        var speed = ScaleAction(actions.ContinuousActions[2], 1, 2);
 
-        Vector3 offset = new Vector3(movementX, transform.position.y, movementZ);
-        _controller.MoveAgent(offset, speed);
+        // 移動量から目的地を計算
+        Vector3 destination = new Vector3(transform.position.x + movementX, transform.position.y, transform.position.z + movementZ);
+        Vector3 navmeshPos = SwapNavMeshPos(destination);
+        if(navmeshPos == Vector3.zero) {
+            RequestDecision();
+        } else {
+            _controller.MoveAgent(
+                navmeshPos,
+                speed
+            );
+        }
+        
 
         // #73 : エージェントの行動集計処理
+        /*
         actionLogs.Add((
             _env.currentTimeSec,
             movementX,
             movementZ,
             speed
         ));
+        */
 
         
     }
 
 
     /// <summary>
-    /// 最短距離の受け入れ可能な避難タワーを選択する
+    /// ランダムな行動を取る
     /// </summary>
     /// <param name="actionsOut"></param>
     public override void Heuristic(in ActionBuffers actionsOut) {
-        
+        // 現在地からランダムなnavmesh上の位置を選択
+        var continuousActionsOut = actionsOut.ContinuousActions;
+        continuousActionsOut[0] = Random.Range(-100, 100);
+        continuousActionsOut[1] = Random.Range(-100, 100);
+        continuousActionsOut[2] = Random.Range(1, 2);
+        //Debug.Log(LogPrefix + "Heuristic Action: " + continuousActionsOut[0] + ", " + continuousActionsOut[1] + ", " + continuousActionsOut[2]);
     }
 
     /** Drone Event Handlers */
@@ -211,6 +233,17 @@ public class DroneNavSearchAgent : Agent {
             }
         }
         return otherAgents;
+    }
+
+
+    private Vector3 SwapNavMeshPos(Vector3 origin) {
+        // 入力座標をNavMesh上の座標に変換する（見つからない場合nullを返す）
+        NavMeshHit hit;
+        if(NavMesh.SamplePosition(origin, out hit, 10.0f, NavMesh.AllAreas)) {
+            return hit.position;
+        }
+        return Vector3.zero;
+
     }
 
 }

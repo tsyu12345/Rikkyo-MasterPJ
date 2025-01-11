@@ -9,6 +9,7 @@ using Constants;
 /// 避難者に関するスクリプト
 /// </summary>
 public class Evacuee : MonoBehaviour {
+
     public enum EvacueeModelModes {
         Guided, // 誘導タスク
         Search // 探索タスク
@@ -27,7 +28,7 @@ public class Evacuee : MonoBehaviour {
     public GameObject FollowTarget;
     public float TargetDistance;
     public bool IsPathFind = false;
-
+    
     private GameObject followedDrone = null;
     private List<string> excludeTowers;
 
@@ -50,10 +51,11 @@ public class Evacuee : MonoBehaviour {
         lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
         lineRenderer.positionCount = 0;
         // タイミングによりnullになる場合があるため、ここで初期化
-        Field = transform.parent.gameObject;
-        _env = Field.GetComponent<EnvManager>();
-        excludeTowers = new List<string>();
-
+        if(transform.parent != null) {
+            Field = transform.parent.gameObject;
+            _env = Field.GetComponent<EnvManager>();
+            excludeTowers = new List<string>();
+        }
         //transform.position = new Vector3(transform.position.x, 1.5f, transform.position.z);
     }
 
@@ -166,7 +168,7 @@ public class Evacuee : MonoBehaviour {
                 // 直前の追跡ドローンを更新
                 followedDrone = hitCollider.gameObject;
                 HidePath();
-                SendAddSignalForDrone(followedDrone);
+                SendAddSignalForDrone<DroneNavAgent>(followedDrone);
                 return;
             }
         }
@@ -196,7 +198,7 @@ public class Evacuee : MonoBehaviour {
         // 直前の追跡ドローンを更新
         followedDrone = sortedAgents[0];
         HidePath();
-        SendAddSignalForDrone(followedDrone);
+        SendAddSignalForDrone<DroneNavAgent>(followedDrone);
     }
     
     /// <summary>
@@ -219,14 +221,16 @@ public class Evacuee : MonoBehaviour {
         return sortedTowers;
     }
 
-    private void SendAddSignalForDrone(GameObject drone) {
-        DroneNavAgent agent = drone.GetComponent<DroneNavAgent>();
+
+    private void SendAddSignalForDrone<T>(GameObject drone) where T : IDroneAgent {
+        T agent = drone.GetComponent<T>();
+
         // 既に誘導中の場合は無視(リストに含まれている場合は無視)
-        if(agent.currentGuidedEvacuees.Contains(gameObject)) {
+        if (agent.currentGuidedEvacuees.Contains(gameObject)) {
             return;
         }
         agent.currentGuidedEvacuees.Add(gameObject);
-        agent.onAddEvacuee?.Invoke();
+        agent.onAddEvacuee();
     }
 
     private void SendRemoveSignalForDrone(GameObject drone) {
@@ -254,24 +258,30 @@ public class Evacuee : MonoBehaviour {
         lineRenderer.positionCount = 0;
     }
 
-    void DetectDroneInView() {
-        // 視界内に入ったオブジェクトを取得
+
+    /// <summary>
+    /// ドローンが視界内にいるかどうかを判定
+    /// NavMesh.Raycast()を使用して、視界内にドローンがいるかどうかを判定 
+    /// </summary>
+    private void DetectDroneInView() {
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, viewRadius, detectionLayer);
-
         foreach (var hitCollider in hitColliders) {
-            // 特定のタグを持つオブジェクトだけを処理
             if (hitCollider.CompareTag(Tags.Agent)) {
-                Vector3 directionToTarget = (hitCollider.transform.position - transform.position).normalized;
-                float angleBetween = Vector3.Angle(transform.forward, directionToTarget);
-
-                // 視野角内にある場合のみ処理
-                if (angleBetween < viewAngle / 2f) {
-                    // Raycastで遮蔽物がないか確認（オプション）
-                    if (!Physics.Linecast(transform.position, hitCollider.transform.position, ~detectionLayer)) {
-                        Debug.Log("視界内にタグ " + Tags.Agent + " のオブジェクトを検出: " + hitCollider.gameObject.name);
-                        // ターゲットに設定
+                Vector3 direction = (hitCollider.transform.position - transform.position).normalized;
+                float angle = Vector3.Angle(transform.forward, direction);
+                if (angle < viewAngle / 2) {
+                    NavMeshHit hit;
+                    if (NavMesh.Raycast(transform.position, hitCollider.transform.position, out hit, NavMesh.AllAreas)) {
                         isFollowingDrone = true;
                         FollowTarget = hitCollider.gameObject;
+                        if(followedDrone != null) { //前に追跡していたドローンがいた場合、リストから削除
+                            SendRemoveSignalForDrone(followedDrone);
+                        }
+                        // 直前の追跡ドローンを更新
+                        followedDrone = hitCollider.gameObject;
+                        HidePath();
+                        SendAddSignalForDrone<DroneNavSearchAgent>(followedDrone);
+                        return;
                     }
                 }
             }

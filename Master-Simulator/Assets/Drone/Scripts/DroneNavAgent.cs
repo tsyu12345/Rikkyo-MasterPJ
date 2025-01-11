@@ -10,12 +10,12 @@ using UnityEngine.AI;
 using UtilityFuncs;
 using Constants;
 
-public class DroneNavAgent : Agent {
+public class DroneNavAgent : Agent , IDroneAgent {
     
     [Header("Agent Parameters")]
     public float patrolRadius = 10f;
-    public List<GameObject> currentGuidedEvacuees = new List<GameObject>();
-    public int guidedCount = 0;
+    public List<GameObject> currentGuidedEvacuees { get; set; } = new List<GameObject>();
+    public int guidedCount { get; set; } = 0;
     public GameObject Target;
     public int FlyMode = 0;
 
@@ -31,6 +31,10 @@ public class DroneNavAgent : Agent {
 
     public delegate void OnAddEvacuee();
     public OnAddEvacuee onAddEvacuee;
+
+    void IDroneAgent.onAddEvacuee() {
+        onAddEvacuee?.Invoke();
+    }
 
     void Start() {
         _controller = GetComponent<NavController>();

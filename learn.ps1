@@ -4,22 +4,23 @@ param(
     [bool]$force = $false,
     [bool]$exe = $false,
     [bool]$debug = $false,
-    [int]$port = 5004
+    [int]$port = 5004,
+    [int]$timescale = 20
 )
 
-$configurePath = "Master-Simulator\config\test1_0_nav.yaml"
+$configurePath = "Master-Simulator\config\test1_0.yaml"
 $exePath = "Master-Simulator\build\Master-Simulator.exe"
 
 if($exe) {
     if($force) {
-        mlagents-learn $configurePath --env=$exePath --num-envs=$envs --run-id=$modelId --force --width=1920 --height=1080 --torch-device="cuda" --debug --base-port=$port --max-lifetime-restarts=-1 --restarts-rate-limit-n=-1
+        mlagents-learn $configurePath --env=$exePath --num-envs=$envs --run-id=$modelId --force --width=1920 --height=1080 --torch-device="cuda" --debug --base-port=$port --max-lifetime-restarts=-1 --restarts-rate-limit-n=-1 --time-scale=$timescale
     } else {
-        mlagents-learn $configurePath --env=$exePath --run-id=$modelId --num-envs=$envs --width=1920 --height=1080 --torch-device="cuda" --resume --debug --base-port=$port --max-lifetime-restarts=-1 --restarts-rate-limit-n=-1
+        mlagents-learn $configurePath --env=$exePath --run-id=$modelId --num-envs=$envs --width=1920 --height=1080 --torch-device="cuda" --resume --debug --base-port=$port --max-lifetime-restarts=-1 --restarts-rate-limit-n=-1 --time-scale=$timescale
     }
 } else {
     if($force) {
-        mlagents-learn $configurePath --run-id=$modelId --force --width=1920 --height=1080 --torch-device="cuda" --debug --base-port=$port --max-lifetime-restarts=-1 --restarts-rate-limit-n=-1
+        mlagents-learn $configurePath --run-id=$modelId --force --width=1920 --height=1080 --torch-device="cuda" --debug --base-port=$port --max-lifetime-restarts=-1 --restarts-rate-limit-n=-1 --time-scale=$timescale
     } else {
-        mlagents-learn $configurePath --run-id=$modelId --width=1920 --height=1080 --torch-device="cuda" --resume --debug --base-port=$port --max-lifetime-restarts=-1 --restarts-rate-limit-n=-1
+        mlagents-learn $configurePath --run-id=$modelId --width=1920 --height=1080 --torch-device="cuda" --resume --debug --base-port=$port --max-lifetime-restarts=-1 --restarts-rate-limit-n=-1 --time-scale=$timescale
     }
 }

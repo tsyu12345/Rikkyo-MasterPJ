@@ -74,9 +74,9 @@ public class NavController : DroneController {
         */
     }
 
-    public void MoveAgent(Vector3 offset, float speed) {
+    public void MoveAgent(Vector3 destination, float speed) {
         NavAgent.speed = speed;
-        NavAgent.Move(offset);
+        NavAgent.SetDestination(destination);
     }
 
     /// <summary>

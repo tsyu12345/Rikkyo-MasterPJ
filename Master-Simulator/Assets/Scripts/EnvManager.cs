@@ -99,7 +99,7 @@ public abstract class EnvManager : MonoBehaviour {
     public delegate void EpisodeInitializeHandler();
     public EpisodeInitializeHandler OnEpisodeInitialize;
 
-    private SimpleMultiAgentGroup Agents;
+    public SimpleMultiAgentGroup Agents;
     public string envUUID;
     public float currentTimeSec = 0.0f;
     protected delegate void SpawnCallback(GameObject obj);
@@ -190,7 +190,7 @@ public abstract class EnvManager : MonoBehaviour {
         bool shouldEndEpisode = currentTimeSec >= LimitTimeSec && LimitTimeSec > 0;
         if (allEvacuees) {
             OnEvacueeAll?.Invoke(EvacuationRate);
-        } else if (SimulateMode == SimulateModeSetting.AgentsModel) {
+        } else if (SimulateMode == SimulateModeSetting.AgentsModel || SimulateMode == SimulateModeSetting.SearchAgentModel) {
             var remainAgents = Agents.GetRegisteredAgents();
             if (remainAgents.Count < 1 || shouldEndEpisode) {
                 OnEndEpisode?.Invoke(EvacuationRate);
@@ -261,6 +261,18 @@ public abstract class EnvManager : MonoBehaviour {
             } else {
                 Agents.EndGroupEpisode();
             }
+        } else if(SimulateMode == SimulateModeSetting.SearchAgentModel) {
+            // エージェントのエピソード終了処理を発行
+            foreach(GameObject drone in Drones) {
+                var agent = drone.GetComponent<DroneNavSearchAgent>();
+                agent.Reset();
+            }
+            //AddGroupReward();
+            if(isEvacueeAll) {
+                Agents.GroupEpisodeInterrupted();
+            } else {
+                Agents.EndGroupEpisode();
+            }
         }
         currentEpisodeCount++;
         evacueeRateDatas.Clear();
@@ -320,8 +332,14 @@ public abstract class EnvManager : MonoBehaviour {
     protected bool isEvacueeAll() {
         foreach (GameObject evacuee in Evacuees) {
             Evacuee eva = evacuee.GetComponent<Evacuee>();
-            if (!eva.isEvacuate) {
-                return false;
+            if(SimulateMode == SimulateModeSetting.AgentsModel || SimulateMode == SimulateModeSetting.EvacueesOnly) {
+                if (!eva.isEvacuate) {
+                    return false;
+                }
+            } else if(SimulateMode == SimulateModeSetting.SearchAgentModel) {
+                if (!eva.isFollowingDrone) {
+                    return false;
+                }
             }
         }
         return true;
@@ -335,7 +353,7 @@ public abstract class EnvManager : MonoBehaviour {
             int currentRate = (int)(EvacuationRate * 100);
             evacRateCounter.text = $"Rate : {currentRate}%";
         }
-        if (remainAgentsCounter != null && SimulateMode == SimulateModeSetting.AgentsModel) {
+        if (remainAgentsCounter != null && !(SimulateMode == SimulateModeSetting.EvacueesOnly && TrainMode == TrainerMode.Inference)) {
             remainAgentsCounter.text = $"Remain Agents : {Agents.GetRegisteredAgents().Count}";
         }
     }
@@ -343,8 +361,15 @@ public abstract class EnvManager : MonoBehaviour {
     private float CalcEvacuationRate() {
         int evacuatedCount = 0;
         foreach (GameObject evacuee in Evacuees) {
-            if (!evacuee.activeSelf) {
-                evacuatedCount++;
+            if(SimulateMode == SimulateModeSetting.AgentsModel && SimulateMode == SimulateModeSetting.EvacueesOnly) {
+                if (!evacuee.activeSelf) {
+                    evacuatedCount++;
+                }
+            } else if(SimulateMode == SimulateModeSetting.SearchAgentModel) {
+                Evacuee eva = evacuee.GetComponent<Evacuee>();
+                if (eva.isFollowingDrone) {
+                    evacuatedCount++;
+                }
             }
         }
         return (float)evacuatedCount / Evacuees.Count;
