@@ -361,7 +361,7 @@ public abstract class EnvManager : MonoBehaviour {
     private float CalcEvacuationRate() {
         int evacuatedCount = 0;
         foreach (GameObject evacuee in Evacuees) {
-            if(SimulateMode == SimulateModeSetting.AgentsModel && SimulateMode == SimulateModeSetting.EvacueesOnly) {
+            if(SimulateMode == SimulateModeSetting.AgentsModel || SimulateMode == SimulateModeSetting.EvacueesOnly) {
                 if (!evacuee.activeSelf) {
                     evacuatedCount++;
                 }
